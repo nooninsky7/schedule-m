@@ -301,18 +301,42 @@ function goToToday() {
   renderTodayView();
 }
 
+// ==========================================
+// 토스트 알림 헬퍼 (모바일 친화적 피드백)
+// ==========================================
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+
+  const toast = document.createElement('div');
+  let bgClass = 'bg-slate-900/90 text-white dark:bg-white/95 dark:text-slate-900 border-slate-700';
+  if (type === 'success') bgClass = 'bg-emerald-600 text-white shadow-emerald-500/30';
+  else if (type === 'warn') bgClass = 'bg-amber-600 text-white shadow-amber-500/30';
+  else if (type === 'error') bgClass = 'bg-rose-600 text-white shadow-rose-500/30';
+
+  toast.className = `toast-popup px-4 py-2.5 rounded-2xl shadow-lg backdrop-blur-md text-xs sm:text-sm font-bold flex items-center gap-2 pointer-events-auto transition-all ${bgClass}`;
+  toast.innerHTML = `<span>${message}</span>`;
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(-10px)';
+    setTimeout(() => toast.remove(), 300);
+  }, 2400);
+}
+
 function updateDateUI() {
   const picker = document.getElementById('selected-date-picker');
   if (picker) picker.value = state.currentDate;
 
-  const badge = document.getElementById('date-label-badge');
-  if (badge) {
+  const todayBtn = document.getElementById('btn-go-to-today');
+  if (todayBtn) {
     if (state.currentDate === state.todayDate) {
-      badge.textContent = '오늘';
-      badge.className = 'text-xs font-semibold px-3 py-1 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300';
+      todayBtn.className = 'text-xs font-bold px-3 py-1.5 bg-indigo-600 text-white rounded-xl shadow-xs whitespace-nowrap';
+      todayBtn.textContent = '오늘';
     } else {
-      badge.textContent = state.currentDate;
-      badge.className = 'text-xs font-semibold px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300';
+      todayBtn.className = 'text-xs font-bold px-3 py-1.5 bg-indigo-50 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-300 rounded-xl hover:bg-indigo-100 transition whitespace-nowrap border border-indigo-200/60 dark:border-indigo-800';
+      todayBtn.textContent = '오늘로';
     }
   }
 
@@ -592,16 +616,6 @@ function renderSummaryCards(rec) {
     }
   }
 }
-      disciplineBadge.className = 'text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300';
-    } else if (score >= 50) {
-      disciplineBadge.textContent = '보통 실천 ⚡';
-      disciplineBadge.className = 'text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300';
-    } else {
-      disciplineBadge.textContent = '태만 주의 🚨';
-      disciplineBadge.className = 'text-[11px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 animate-pulse';
-    }
-  }
-}
 
 // ==========================================
 // 7. 공부 시간 직접 입력 & 달성 로직
@@ -618,8 +632,8 @@ function saveStudyTimeDirect() {
   const hInput = document.getElementById('study-input-hours');
   const mInput = document.getElementById('study-input-minutes');
 
-  const h = parseInt(hInput.value, 10) || 0;
-  const m = parseInt(mInput.value, 10) || 0;
+  const h = parseInt(hInput ? hInput.value : 0, 10) || 0;
+  const m = parseInt(mInput ? mInput.value : 0, 10) || 0;
 
   const totalMinutes = h * 60 + m;
   const rec = getRecord(state.currentDate);
@@ -629,11 +643,11 @@ function saveStudyTimeDirect() {
   renderTodayView();
 
   const targetMins = (state.studyTargetHours || 3) * 60;
-  if (totalMinutes >= targetMins) {
+  if (totalMinutes >= targetMins && totalMinutes > 0) {
     triggerCelebration('study');
-    alert(`🎉 오늘 목표(${state.studyTargetHours}시간)를 달성했습니다! 총 ${formatMinutes(totalMinutes)} 기록 저장됨.`);
+    showToast(`🎉 오늘 목표(${state.studyTargetHours}시간) 달성! 총 ${formatMinutes(totalMinutes)} 저장됨`, 'success');
   } else {
-    alert(`공부 시간(${formatMinutes(totalMinutes)})이 저장되었습니다.`);
+    showToast(`📖 공부 시간(${formatMinutes(totalMinutes)}) 저장 완료`, 'success');
   }
 }
 
@@ -642,6 +656,7 @@ function quickAddStudy(addMins) {
   rec.studyMinutes = (rec.studyMinutes || 0) + addMins;
   saveData();
   renderTodayView();
+  showToast(`+${formatMinutes(addMins)} 추가됨 (총 ${formatMinutes(rec.studyMinutes)})`, 'info');
 }
 
 function clearStudyTime() {
@@ -650,6 +665,7 @@ function clearStudyTime() {
     rec.studyMinutes = 0;
     saveData();
     renderTodayView();
+    showToast('공부 시간이 0분으로 초기화되었습니다.', 'warn');
   }
 }
 
@@ -715,7 +731,7 @@ function saveWorkoutRecordSimple() {
   saveData();
   renderTodayView();
   triggerCelebration('workout');
-  alert(`🏃 운동 기록 저장 완료!\n종목: ${type}\n시간: ${duration}분`);
+  showToast(`🏃 운동 기록 저장: ${type} ${duration}분 완료!`, 'success');
 }
 
 function saveWorkoutRecord() {
@@ -723,7 +739,7 @@ function saveWorkoutRecord() {
 }
 
 // ==========================================
-// 9. 수면 트래커 (7시간 기준 미달/충족 체크)
+// 9. 수면 트래커 (기준 미달/충족 체크)
 // ==========================================
 function onDirectSleepInput() {
   const h = parseInt(document.getElementById('sleep-direct-hours')?.value, 10) || 0;
@@ -738,6 +754,7 @@ function quickSetSleep(h, m) {
   if (slHoursInput) slHoursInput.value = h;
   if (slMinsInput) slMinsInput.value = m;
   onDirectSleepInput();
+  showToast(`수면 시간 ${h}시간 ${m}분 설정됨`, 'info');
 }
 
 function saveSleepRecordSimple() {
@@ -746,7 +763,7 @@ function saveSleepRecordSimple() {
   const diffMins = h * 60 + m;
 
   if (diffMins <= 0) {
-    alert('수면 시간을 0시간 이상 입력해주세요.');
+    showToast('수면 시간을 0시간 이상 입력해주세요.', 'warn');
     return;
   }
 
@@ -764,9 +781,9 @@ function saveSleepRecordSimple() {
   const sleepTargetText = getSleepTargetText();
   const diff = diffMins - targetSleepM;
   if (diff >= 0) {
-    alert(`🛌 수면 기록 저장 완료: ${formatMinutes(diffMins)}\n✅ ${sleepTargetText} 수면 기준을 충족했습니다! (+${formatMinutes(diff)})`);
+    showToast(`🛌 수면 ${formatMinutes(diffMins)} 저장! 기준(${sleepTargetText}) 충족 (+${formatMinutes(diff)}) 👍`, 'success');
   } else {
-    alert(`🛌 수면 기록 저장 완료: ${formatMinutes(diffMins)}\n⚠️ ${sleepTargetText} 기준 ${formatMinutes(Math.abs(diff))} 부족합니다.`);
+    showToast(`🛌 수면 ${formatMinutes(diffMins)} 저장! 기준(${sleepTargetText}) -${formatMinutes(Math.abs(diff))} 미달 ⚠️`, 'warn');
   }
 }
 
@@ -2553,7 +2570,7 @@ function handleSaveGoalSettings(e) {
   }
 
   triggerCelebration('discipline');
-  alert(`🎯 루틴 목표 기준이 성공적으로 변경되었습니다!\n\n• 공부 목표: 하루 ${state.studyTargetHours}시간 (주 ${state.studyWeeklyTargetHours}시간)\n• 수면 기준: ${getSleepTargetText()} (미달/충족 판정)\n• 운동 목표: 하루 ${state.workoutTargetMinutes}분 (주 ${state.workoutWeeklyTargetDays}일)`);
+  showToast(`🎯 목표 기준 저장 완료! (공부 ${state.studyTargetHours}h / 수면 ${getSleepTargetText()} / 운동 ${state.workoutTargetMinutes}m)`, 'success');
 }
 
 // ==========================================

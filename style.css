@@ -93,7 +93,23 @@ html, body {
 
 /* 터치 버튼 피드백 */
 button:active {
-  transform: scale(0.98);
+  transform: scale(0.97);
+}
+
+/* 토스트 알림 팝업 애니메이션 */
+.toast-popup {
+  animation: toastIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes toastIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-16px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* 폼 컨트롤 모바일 최적화 */

@@ -151,11 +151,10 @@
             <i data-lucide="chevron-right" class="w-5 h-5"></i>
           </button>
         </div>
-        <div class="flex items-center gap-1.5 ml-2 shrink-0">
-          <button onclick="goToToday()" class="text-xs font-bold px-3 py-1.5 bg-indigo-50 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-300 rounded-xl hover:bg-indigo-100 transition whitespace-nowrap">
+        <div class="flex items-center ml-2 shrink-0">
+          <button id="btn-go-to-today" onclick="goToToday()" class="text-xs font-bold px-3 py-1.5 bg-indigo-600 text-white rounded-xl shadow-xs hover:bg-indigo-700 transition whitespace-nowrap">
             오늘
           </button>
-          <span id="date-label-badge" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 hidden sm:inline">오늘</span>
         </div>
       </div>
 
@@ -1159,6 +1158,9 @@
       </button>
     </div>
   </nav>
+
+  <!-- 토스트 알림 컨테이너 (모바일 친화적 피드백) -->
+  <div id="toast-container" class="fixed top-5 inset-x-0 z-50 flex flex-col items-center pointer-events-none px-4 space-y-2"></div>
 
   <script src="app.js"></script>
 </body>
