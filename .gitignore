@@ -1,0 +1,15 @@
+# Logs
+*.log
+cf_out.log
+cf_err.log
+tunnel_url.txt
+cloudflared.exe
+.tmp*
+.test*
+test_runner.ps1
+dl_cf.ps1
+start_tunnel.ps1
+read_cf.ps1
+check_cred.ps1
+capture_calendar.ps1
+*.png

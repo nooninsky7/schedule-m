@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>DailyRoutine Pro | 올인원 스케줄러</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#4f46e5">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Canvas Confetti CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100 min-h-screen transition-colors duration-200 antialiased">
+
+  <!-- 상단 네비게이션 / 헤더 (모바일 세로 최적화) -->
+  <header class="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800">
+    <div class="max-w-md sm:max-w-3xl lg:max-w-5xl mx-auto px-3 sm:px-6 py-2.5 sm:py-3.5 flex items-center justify-between gap-2">
+      <!-- 로고 및 앱 타이틀 -->
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/20 shrink-0">
+          <i data-lucide="check-circle-2" class="w-5 h-5 sm:w-6 sm:h-6"></i>
+        </div>
+        <div class="min-w-0">
+          <h1 class="font-bold text-base sm:text-xl text-slate-900 dark:text-white leading-tight truncate">DailyRoutine Pro</h1>
+          <p class="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 truncate" id="current-date-display">오늘 날짜 로딩 중...</p>
+        </div>
+      </div>
+
+      <!-- 데스크톱용 상단 탭 메뉴 (모바일에서는 하단 탭 바가 메인) -->
+      <nav class="hidden sm:flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl text-sm font-medium">
+        <button id="tab-today-btn" class="nav-tab active flex items-center gap-1.5 px-3.5 py-2 rounded-lg transition-all" onclick="switchTab('today')">
+          <i data-lucide="check-square" class="w-4 h-4"></i>
+          <span>오늘 기록</span>
+        </button>
+        <button id="tab-plan-btn" class="nav-tab flex items-center gap-1.5 px-3.5 py-2 rounded-lg transition-all text-slate-600 dark:text-slate-400 font-bold" onclick="switchToCalendarTab()">
+          <i data-lucide="calendar" class="w-4 h-4 text-indigo-500"></i>
+          <span>대형 달력 (주간합산)</span>
+        </button>
+        <button id="tab-stats-btn" class="nav-tab flex items-center gap-1.5 px-3.5 py-2 rounded-lg transition-all text-slate-600 dark:text-slate-400" onclick="switchTab('stats')">
+          <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+          <span>통계·리포트</span>
+        </button>
+      </nav>
+
+      <!-- 유틸리티 버튼 (데이터 관리, 다크모드) -->
+      <div class="flex items-center gap-1 shrink-0">
+        <button onclick="toggleDarkMode()" class="p-2 rounded-xl text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition" title="다크/라이트 모드">
+          <i id="theme-icon" data-lucide="moon" class="w-5 h-5"></i>
+        </button>
+        <button onclick="openDataModal()" class="p-2 rounded-xl text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition" title="데이터 관리 (백업/샘플)">
+          <i data-lucide="settings" class="w-5 h-5"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-md sm:max-w-3xl lg:max-w-5xl mx-auto px-3 sm:px-6 py-4 sm:py-6 pb-28">
+
+    <!-- ============================================== -->
+    <!-- TAB 1: 오늘 기록 (TODAY) -->
+    <!-- ============================================== -->
+    <section id="tab-today" class="tab-content block space-y-4 sm:space-y-6">
+      
+      <!-- 오늘 요약 대시보드 카드 4개 (모바일 2x2 세로 최적화 그리드) -->
+      <div class="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-4">
+        <!-- 1. 오늘 할일 달성률 & 자기점검 판정 -->
+        <div class="bg-white dark:bg-slate-800 p-3 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm flex items-center justify-between">
+          <div class="min-w-0 flex-1 pr-1">
+            <span class="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400">할일 달성률</span>
+            <div class="flex items-center gap-1 mt-0.5 sm:mt-1">
+              <h3 class="text-xl sm:text-2xl font-bold text-slate-800 dark:text-white" id="stat-rate-text">0%</h3>
+              <span id="discipline-badge" class="text-[9px] sm:text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 truncate">점검중</span>
+            </div>
+            <p class="text-[10px] sm:text-xs text-slate-500 mt-0.5 truncate" id="stat-count-text">0 / 0개 완료</p>
+          </div>
+          <div class="relative w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center shrink-0">
+            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+              <path class="text-slate-100 dark:text-slate-700" stroke-width="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+              <path id="stat-progress-circle" class="text-indigo-600 transition-all duration-500 stroke-current" stroke-dasharray="0, 100" stroke-width="3.5" stroke-linecap="round" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+            </svg>
+            <i data-lucide="check-circle" class="w-4 h-4 sm:w-5 sm:h-5 absolute text-indigo-500"></i>
+          </div>
+        </div>
+
+        <!-- 2. 오늘 공부 시간 & 달성 여부 -->
+        <div class="bg-white dark:bg-slate-800 p-3 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm flex items-center justify-between">
+          <div class="min-w-0 flex-1 pr-1">
+            <div class="flex items-center gap-1">
+              <span class="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400">공부 시간</span>
+              <span id="study-status-badge" class="text-[9px] sm:text-[10px] font-bold px-1.5 py-0.2 rounded bg-slate-100 text-slate-500 dark:bg-slate-700">미달</span>
+            </div>
+            <h3 class="text-base sm:text-2xl font-bold mt-0.5 sm:mt-1 text-blue-600 dark:text-blue-400 truncate" id="summary-study-time">0시간 0분</h3>
+            <p class="text-[10px] sm:text-xs text-slate-500 mt-0.5 truncate" id="summary-study-target">목표: 3시간</p>
+          </div>
+          <div class="w-9 h-9 sm:w-12 sm:h-12 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
+            <i data-lucide="book-open" class="w-4 h-4 sm:w-6 sm:h-6"></i>
+          </div>
+        </div>
+
+        <!-- 3. 오늘 운동 여부 & 내역 -->
+        <div class="bg-white dark:bg-slate-800 p-3 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm flex items-center justify-between">
+          <div class="min-w-0 flex-1 pr-1">
+            <span class="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400">오늘 운동</span>
+            <h3 class="text-base sm:text-2xl font-bold mt-0.5 sm:mt-1 text-emerald-600 dark:text-emerald-400 truncate" id="summary-workout-status">미실천</h3>
+            <p class="text-[10px] sm:text-xs text-slate-500 mt-0.5 truncate" id="summary-workout-detail">-</p>
+          </div>
+          <div class="w-9 h-9 sm:w-12 sm:h-12 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+            <i data-lucide="dumbbell" class="w-4 h-4 sm:w-6 sm:h-6"></i>
+          </div>
+        </div>
+
+        <!-- 4. 수면 시간 (7시간 기준 판정) -->
+        <div class="bg-white dark:bg-slate-800 p-3 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm flex items-center justify-between">
+          <div class="min-w-0 flex-1 pr-1">
+            <div class="flex items-center gap-1">
+              <span class="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400">수면(7h)</span>
+              <span id="sleep-diff-badge" class="text-[9px] sm:text-[10px] font-bold px-1 py-0.2 rounded bg-slate-100 text-slate-500 dark:bg-slate-700">대기</span>
+            </div>
+            <h3 class="text-base sm:text-2xl font-bold mt-0.5 sm:mt-1 text-purple-600 dark:text-purple-400 truncate" id="summary-sleep-time">0시간 0분</h3>
+            <p class="text-[10px] sm:text-xs text-slate-500 mt-0.5 truncate" id="summary-sleep-range">7h 기준 비교</p>
+          </div>
+          <div class="w-9 h-9 sm:w-12 sm:h-12 rounded-xl bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400 shrink-0">
+            <i data-lucide="moon-star" class="w-4 h-4 sm:w-6 sm:h-6"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- 상단 컨트롤: 날짜 변경기 (모바일 터치 친화적) -->
+      <div class="flex items-center justify-between bg-white dark:bg-slate-800 p-2.5 sm:p-3 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm">
+        <div class="flex items-center gap-1 flex-1 min-w-0">
+          <button onclick="changeCurrentDate(-1)" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition shrink-0" title="이전 날짜">
+            <i data-lucide="chevron-left" class="w-5 h-5"></i>
+          </button>
+          <input type="date" id="selected-date-picker" onchange="onDatePickChange(this.value)" class="flex-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-bold rounded-xl px-2 py-1.5 text-center focus:outline-none focus:ring-2 focus:ring-indigo-500 min-w-0">
+          <button onclick="changeCurrentDate(1)" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition shrink-0" title="다음 날짜">
+            <i data-lucide="chevron-right" class="w-5 h-5"></i>
+          </button>
+        </div>
+        <div class="flex items-center gap-1.5 ml-2 shrink-0">
+          <button onclick="goToToday()" class="text-xs font-bold px-3 py-1.5 bg-indigo-50 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-300 rounded-xl hover:bg-indigo-100 transition whitespace-nowrap">
+            오늘
+          </button>
+          <span id="date-label-badge" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 hidden sm:inline">오늘</span>
+        </div>
+      </div>
+
+      <!-- 이달의 진행 중인 루틴 목표 미니 배너 (진행률 확인) -->
+      <div id="today-monthly-goals-banner" class="bg-gradient-to-r from-indigo-50/80 to-purple-50/80 dark:from-slate-800/80 dark:to-indigo-950/40 p-4 rounded-2xl border border-indigo-100 dark:border-indigo-900/40 shadow-sm">
+        <div class="flex items-center justify-between mb-2.5">
+          <div class="flex items-center gap-2">
+            <span class="flex h-2 w-2 relative">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+            </span>
+            <span class="text-xs font-bold text-slate-800 dark:text-slate-200" id="today-active-goals-title">이달의 실천 중인 루틴 목표</span>
+          </div>
+          <button onclick="switchTab('plan'); switchPlanSubView('monthly');" class="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:underline flex items-center gap-1">
+            전체 목표 보기 &gt;
+          </button>
+        </div>
+        <div id="today-active-goals-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+          <!-- JS 렌더링 -->
+        </div>
+      </div>
+
+      <!-- 핵심 트래커 섹션 (공부 시간 / 운동 기록 / 수면 7시간 기준) -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- 1. 공부 시간 직접 입력 & 달성 체크 -->
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-2 font-bold text-slate-800 dark:text-white">
+                <i data-lucide="book-open" class="w-5 h-5 text-blue-500"></i>
+                <span>공부 시간 입력</span>
+              </div>
+              <span id="study-eval-tag" class="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500">미달</span>
+            </div>
+
+            <!-- 오늘 목표 설정 & 현재 달성 현황 -->
+            <div class="bg-blue-50/60 dark:bg-blue-950/30 p-3.5 rounded-xl border border-blue-100 dark:border-blue-900/40 mb-4">
+              <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
+                <span>오늘 목표 공부 시간</span>
+                <div class="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-200">
+                  <input type="number" id="study-target-hours" min="1" max="24" value="3" onchange="updateStudyTargetHours(this.value)" class="w-12 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded px-1.5 py-0.5 text-center text-xs font-bold text-blue-600 focus:outline-none">
+                  <span>시간</span>
+                </div>
+              </div>
+              <div class="flex items-baseline justify-between mt-2">
+                <span class="text-xs font-medium text-slate-600 dark:text-slate-300">현재 기록된 시간:</span>
+                <span class="text-lg font-bold text-blue-600 dark:text-blue-400" id="card-total-study">0시간 0분</span>
+              </div>
+              <div class="mt-2 text-xs font-semibold" id="study-target-diff-text">
+                목표까지 3시간 남음 (태만 주의 ⚠️)
+              </div>
+            </div>
+
+            <!-- 시간 직접 입력 폼 -->
+            <div class="space-y-3">
+              <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 block">오늘 총 공부 시간 입력</label>
+              <div class="grid grid-cols-2 gap-2">
+                <div class="flex items-center gap-1.5">
+                  <input type="number" id="study-input-hours" min="0" max="24" placeholder="0" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm font-bold text-center focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <span class="text-xs font-medium text-slate-500">시간</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <input type="number" id="study-input-minutes" min="0" max="59" step="5" placeholder="0" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm font-bold text-center focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <span class="text-xs font-medium text-slate-500">분</span>
+                </div>
+              </div>
+
+              <!-- 퀵 버튼 -->
+              <div class="flex items-center gap-1.5 text-xs">
+                <span class="text-[11px] text-slate-400">빠른추가:</span>
+                <button type="button" onclick="quickAddStudy(30)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 rounded text-slate-600 dark:text-slate-300 font-medium">+30분</button>
+                <button type="button" onclick="quickAddStudy(60)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 rounded text-slate-600 dark:text-slate-300 font-medium">+1시간</button>
+                <button type="button" onclick="quickAddStudy(120)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 rounded text-slate-600 dark:text-slate-300 font-medium">+2시간</button>
+                <button type="button" onclick="clearStudyTime()" class="ml-auto text-rose-500 hover:underline text-[11px]">초기화</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700/60">
+            <button onclick="saveStudyTimeDirect()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition shadow-sm shadow-blue-500/20">
+              공부 시간 저장하기
+            </button>
+          </div>
+        </div>
+
+        <!-- 2. 운동 여부 & 4개 종목 선택 (줌바, 헬스, 자전거, 그외) -->
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2 font-bold text-slate-800 dark:text-white">
+                <i data-lucide="dumbbell" class="w-5 h-5 text-emerald-500"></i>
+                <span>운동 기록 (4개 종목 선택)</span>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="workout-toggle" onchange="toggleWorkoutDone(this.checked)" class="sr-only peer">
+                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                <span class="ml-2 text-xs font-semibold text-slate-600 dark:text-slate-300" id="workout-toggle-label">미실천</span>
+              </label>
+            </div>
+
+            <!-- 현재 운동 상태 요약 -->
+            <div class="bg-emerald-50/70 dark:bg-emerald-950/30 p-3 rounded-xl border border-emerald-100 dark:border-emerald-900/40 mb-3">
+              <div class="flex items-center justify-between text-xs">
+                <span class="text-slate-500 dark:text-slate-400">오늘 완료한 운동:</span>
+                <span class="font-bold text-emerald-700 dark:text-emerald-300" id="workout-summary-badge">운동 쉰 날</span>
+              </div>
+            </div>
+
+            <div class="space-y-3">
+              <!-- 운동 종목 4개 선택 버튼 -->
+              <div>
+                <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1.5">운동 종목 선택 *</label>
+                <div class="grid grid-cols-2 gap-2" id="workout-type-btn-group">
+                  <button type="button" onclick="selectWorkoutType('줌바')" data-val="줌바" class="workout-choice-btn py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 hover:border-emerald-500 transition">
+                    <span>💃</span><span>줌바</span>
+                  </button>
+                  <button type="button" onclick="selectWorkoutType('헬스')" data-val="헬스" class="workout-choice-btn py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 hover:border-emerald-500 transition">
+                    <span>🏋️</span><span>헬스</span>
+                  </button>
+                  <button type="button" onclick="selectWorkoutType('자전거')" data-val="자전거" class="workout-choice-btn py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 hover:border-emerald-500 transition">
+                    <span>🚴</span><span>자전거</span>
+                  </button>
+                  <button type="button" onclick="selectWorkoutType('그외')" data-val="그외" class="workout-choice-btn py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 hover:border-emerald-500 transition">
+                    <span>🏃</span><span>그외</span>
+                  </button>
+                </div>
+                <input type="hidden" id="workout-selected-type" value="헬스">
+              </div>
+
+              <!-- 운동 시간 입력 -->
+              <div>
+                <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">운동 시간 (분 단위) *</label>
+                <div class="flex items-center gap-2">
+                  <input type="number" id="workout-duration-input" min="0" step="5" placeholder="예: 60" class="flex-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-center focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                  <span class="text-xs font-medium text-slate-500">분 실천</span>
+                </div>
+                <!-- 퀵 추가 버튼 -->
+                <div class="flex items-center gap-1 mt-1.5 text-xs">
+                  <button type="button" onclick="quickSetWorkoutDuration(30)" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-[11px]">30분</button>
+                  <button type="button" onclick="quickSetWorkoutDuration(50)" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-[11px]">50분</button>
+                  <button type="button" onclick="quickSetWorkoutDuration(60)" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-[11px]">60분</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700/60">
+            <button onclick="saveWorkoutRecordSimple()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold transition shadow-sm shadow-emerald-500/20">
+              운동 기록 저장하기
+            </button>
+          </div>
+        </div>
+
+        <!-- 3. 수면 시간 (취침/기상 없이 시간/분만 간단 입력 & 7시간 기준 판정) -->
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2 font-bold text-slate-800 dark:text-white">
+                <i data-lucide="moon-star" class="w-5 h-5 text-purple-500"></i>
+                <span>수면 시간 (7시간 기준)</span>
+              </div>
+              <span id="sleep-eval-tag" class="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500">기록대기</span>
+            </div>
+
+            <!-- 7시간 기준 판정 배너 -->
+            <div class="bg-purple-50/60 dark:bg-purple-950/30 p-3.5 rounded-xl border border-purple-100 dark:border-purple-900/40 mb-3">
+              <div class="flex items-baseline justify-between">
+                <span class="text-xs font-medium text-slate-600 dark:text-slate-300">오늘 잔 시간:</span>
+                <span class="text-lg font-bold text-purple-700 dark:text-purple-300" id="calc-sleep-display">0시간 0분</span>
+              </div>
+              <div class="mt-1.5 text-xs font-bold" id="sleep-7h-status-text">
+                7시간 기준: 수면 시간을 입력해주세요.
+              </div>
+            </div>
+
+            <!-- 시간/분 직접 입력 (취침/기상 시간 완전 제거) -->
+            <div class="space-y-3">
+              <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 block">수면 시간 입력 (시간/분) *</label>
+              <div class="grid grid-cols-2 gap-2">
+                <div class="flex items-center gap-1.5">
+                  <input type="number" id="sleep-direct-hours" min="0" max="24" placeholder="7" oninput="onDirectSleepInput()" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-center focus:outline-none focus:ring-2 focus:ring-purple-500">
+                  <span class="text-xs font-medium text-slate-500">시간</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <input type="number" id="sleep-direct-mins" min="0" max="59" step="5" placeholder="0" oninput="onDirectSleepInput()" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-center focus:outline-none focus:ring-2 focus:ring-purple-500">
+                  <span class="text-xs font-medium text-slate-500">분</span>
+                </div>
+              </div>
+
+              <!-- 퀵 버튼 -->
+              <div class="flex items-center gap-1.5 text-xs">
+                <button type="button" onclick="quickSetSleep(6, 0)" class="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-[11px]">6시간</button>
+                <button type="button" onclick="quickSetSleep(7, 0)" class="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-[11px] font-bold text-purple-600">7시간(기준)</button>
+                <button type="button" onclick="quickSetSleep(7, 30)" class="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-[11px]">7.5시간</button>
+                <button type="button" onclick="quickSetSleep(8, 0)" class="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-[11px]">8시간</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700/60">
+            <button onclick="saveSleepRecordSimple()" class="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-sm font-semibold transition shadow-sm shadow-purple-500/20">
+              수면 시간 저장하기
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      </div>
+
+      <!-- 일일 할 일 (Todo) 섹션 -->
+      <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+              <i data-lucide="list-todo" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h2 class="text-base font-bold text-slate-800 dark:text-white">오늘의 할 일 체크리스트</h2>
+              <p class="text-xs text-slate-500">목표를 완료할 때마다 달성률이 실시간 반영됩니다.</p>
+            </div>
+          </div>
+
+          <!-- 카테고리 필터 태그 -->
+          <div class="flex items-center gap-1.5 overflow-x-auto text-xs" id="todo-filter-group">
+            <button onclick="setTodoFilter('ALL')" class="todo-filter-btn active px-3 py-1 rounded-full font-medium bg-slate-900 text-white dark:bg-white dark:text-slate-900 transition">전체</button>
+            <button onclick="setTodoFilter('공부')" class="todo-filter-btn px-3 py-1 rounded-full font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition">공부</button>
+            <button onclick="setTodoFilter('운동/건강')" class="todo-filter-btn px-3 py-1 rounded-full font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition">운동/건강</button>
+            <button onclick="setTodoFilter('업무/과제')" class="todo-filter-btn px-3 py-1 rounded-full font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition">업무/과제</button>
+            <button onclick="setTodoFilter('기타')" class="todo-filter-btn px-3 py-1 rounded-full font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition">기타</button>
+          </div>
+        </div>
+
+        <!-- 할 일 입력 폼 -->
+        <form id="add-todo-form" onsubmit="handleCreateTodo(event)" class="mb-5 flex flex-col sm:flex-row gap-2">
+          <select id="new-todo-category" class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="공부">📚 공부</option>
+            <option value="운동/건강">🏃 운동/건강</option>
+            <option value="업무/과제">💻 업무/과제</option>
+            <option value="루틴">⭐ 데일리 루틴</option>
+            <option value="기타">✏️ 기타</option>
+          </select>
+          <input type="text" id="new-todo-title" placeholder="새로운 할 일을 입력하세요 (예: 영어 단어 30개 외우기, 코딩 1시간)" required class="flex-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <input type="number" id="new-todo-est-min" placeholder="예상 분(선택)" min="5" step="5" class="w-28 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <button type="submit" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold flex items-center justify-center gap-1.5 transition shadow-sm shadow-indigo-500/20">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            <span>추가</span>
+          </button>
+        </form>
+
+        <!-- 할 일 리스트 -->
+        <div id="todo-list-container" class="space-y-2.5">
+          <!-- JS 렌더링 영역 -->
+          <div class="text-center py-10 text-slate-400">
+            할 일이 없습니다. 위의 입력창에서 오늘 할 일을 추가해보세요!
+          </div>
+        </div>
+
+        <!-- 오늘 한 줄 회고 & 일기 -->
+        <div class="mt-8 pt-6 border-t border-slate-200/80 dark:border-slate-700/80">
+          <div class="flex items-center gap-2 mb-2 font-bold text-sm text-slate-800 dark:text-white">
+            <i data-lucide="message-square-quote" class="w-4 h-4 text-amber-500"></i>
+            <span>오늘의 한 줄 회고 / 일기</span>
+          </div>
+          <div class="flex gap-2">
+            <input type="text" id="daily-note-input" placeholder="오늘 하루는 어땠나요? 달성한 점이나 아쉬웠던 점을 한 줄로 적어보세요." class="flex-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+            <button onclick="saveDailyNote()" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-medium transition">저장</button>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ============================================== -->
+    <!-- TAB 2: 주간 & 월간 계획 (PLAN) -->
+    <!-- ============================================== -->
+    <section id="tab-plan" class="tab-content hidden space-y-3 sm:space-y-6">
+      
+      <!-- 상단 계획 모드 전환 버튼 (모바일 세로 컴팩트) -->
+      <div class="flex items-center justify-between gap-2 pb-1">
+        <div>
+          <h2 class="text-base sm:text-xl font-bold text-slate-800 dark:text-white">주간 & 대형 달력</h2>
+          <p class="text-[11px] sm:text-xs text-slate-500">실천 현황을 달력에서 확인하세요.</p>
+        </div>
+        <div class="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl text-xs font-semibold shrink-0">
+          <button id="plan-view-weekly-btn" onclick="switchPlanSubView('weekly')" class="px-2.5 sm:px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400">주간 리포트</button>
+          <button id="plan-view-monthly-btn" onclick="switchPlanSubView('monthly')" class="px-2.5 sm:px-3 py-1.5 rounded-lg bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white">대형 달력</button>
+        </div>
+      </div>
+
+      <!-- SUBVIEW 1: 주간 계획표 & 주간 자기점검(성실/태만) 통계 -->
+      <div id="plan-subview-weekly" class="space-y-6">
+        
+        <!-- 이번 주 종합 자기점검 리포트 카드 (공부 총시간/평균/달성여부, 운동내역, 수면 7시간 기준) -->
+        <div class="bg-gradient-to-br from-slate-900 to-indigo-950 text-white p-6 rounded-2xl shadow-md border border-slate-700">
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-5 border-b border-slate-700/80 pb-4">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-400">
+                <i data-lucide="shield-check" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h3 class="font-bold text-base text-white flex items-center gap-2">
+                  <span id="weekly-audit-title">이번 주 자기점검 리포트</span>
+                  <span id="weekly-discipline-badge" class="text-xs px-2 py-0.5 rounded-full font-bold bg-indigo-600 text-white">성실 실천 중</span>
+                </h3>
+                <p class="text-xs text-slate-300">공부 총시간·평균, 운동 실천 내역, 7시간 수면 준수 여부를 종합 점검합니다.</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <span class="text-xs text-slate-400 block">이번 주 목표 실천 점수</span>
+              <span class="text-2xl font-extrabold text-indigo-400" id="weekly-score-text">0점</span>
+            </div>
+          </div>
+
+          <!-- 3대 지표 그리드 (공부 / 운동 / 수면) -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <!-- 1. 주간 공부 통계 -->
+            <div class="bg-white/10 dark:bg-white/5 p-4 rounded-xl border border-white/10">
+              <div class="flex items-center justify-between text-xs text-blue-200 mb-1">
+                <span class="font-semibold flex items-center gap-1"><i data-lucide="book-open" class="w-3.5 h-3.5"></i> 주간 공부 통계</span>
+                <span id="weekly-study-pass-badge" class="font-bold text-emerald-400">달성</span>
+              </div>
+              <div class="text-xl font-bold text-white mt-1" id="weekly-study-total">0시간 0분</div>
+              <div class="text-xs text-slate-300 mt-1 flex justify-between">
+                <span>일 평균: <strong class="text-white" id="weekly-study-avg">0시간</strong></span>
+                <span id="weekly-study-days-count">0/7일 목표달성</span>
+              </div>
+            </div>
+
+            <!-- 2. 주간 운동 통계 -->
+            <div class="bg-white/10 dark:bg-white/5 p-4 rounded-xl border border-white/10">
+              <div class="flex items-center justify-between text-xs text-emerald-200 mb-1">
+                <span class="font-semibold flex items-center gap-1"><i data-lucide="dumbbell" class="w-3.5 h-3.5"></i> 주간 운동 실천</span>
+                <span id="weekly-workout-pass-badge" class="font-bold text-emerald-400">0일 실천</span>
+              </div>
+              <div class="text-xl font-bold text-white mt-1" id="weekly-workout-duration">총 0분</div>
+              <div class="text-xs text-slate-300 mt-1 truncate" id="weekly-workout-types-summary">
+                운동 내역 없음
+              </div>
+            </div>
+
+            <!-- 3. 주간 수면 (7시간 기준) 통계 -->
+            <div class="bg-white/10 dark:bg-white/5 p-4 rounded-xl border border-white/10">
+              <div class="flex items-center justify-between text-xs text-purple-200 mb-1">
+                <span class="font-semibold flex items-center gap-1"><i data-lucide="moon" class="w-3.5 h-3.5"></i> 수면 (7시간 기준)</span>
+                <span id="weekly-sleep-eval-badge" class="font-bold text-purple-300">점검</span>
+              </div>
+              <div class="text-xl font-bold text-white mt-1" id="weekly-sleep-avg">평균 0시간 0분</div>
+              <div class="text-xs text-slate-300 mt-1 flex justify-between">
+                <span class="text-emerald-300" id="weekly-sleep-pass-count">7h 이상: 0일</span>
+                <span class="text-amber-300" id="weekly-sleep-fail-count">7h 미달: 0일</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 이번 주 핵심 목표 (Weekly Top 3 Goals) -->
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2 font-bold text-base text-slate-800 dark:text-white">
+              <i data-lucide="flag" class="w-5 h-5 text-indigo-500"></i>
+              <span id="weekly-title-display">이번 주 핵심 목표 (Week)</span>
+            </div>
+            <button onclick="addWeeklyGoalPrompt()" class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1">
+              <i data-lucide="plus-circle" class="w-4 h-4"></i> 목표 추가
+            </button>
+          </div>
+
+          <div id="weekly-goals-container" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <!-- JS 렌더링 -->
+          </div>
+        </div>
+
+        <!-- 주간 7일 캘린더 카드 그리드 (월~일) -->
+        <div class="grid grid-cols-1 md:grid-cols-7 gap-3" id="weekly-days-grid">
+          <!-- JS 렌더링 -->
+        </div>
+      </div>
+
+      <!-- SUBVIEW 2: 월간 캘린더 & 월별 루틴 목표 -->
+      <div id="plan-subview-monthly" class="hidden space-y-4 sm:space-y-6">
+        
+        <!-- 1. 대형 달력 (주간합산) 본체 카드 -->
+        <div class="bg-white dark:bg-slate-800 p-3.5 sm:p-6 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm space-y-4">
+          <!-- 1-1. 항목별 대형 달력 모드 선택 탭 & 커스텀 루틴 추가 버튼 -->
+          <div class="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-700 pb-3">
+            <div>
+              <span class="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">대형 달력 뷰</span>
+              <h3 class="text-base sm:text-lg font-extrabold text-slate-800 dark:text-white">항목별 달성도 달력</h3>
+            </div>
+            <button onclick="openHabitManagerModal()" class="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-300 rounded-xl text-xs font-semibold flex items-center gap-1 transition shrink-0">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+              <span>+ 루틴 추가</span>
+            </button>
+          </div>
+
+          <!-- 1-2. 항목 선택 필터 칩 목록 (가로 터치 스크롤) -->
+          <div class="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar" id="calendar-mode-chips">
+            <button onclick="setCalendarMode('all')" id="cal-mode-all" class="cal-mode-btn active px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-white dark:bg-white dark:text-slate-900 transition flex items-center gap-1 shrink-0 shadow-sm">
+              <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i>
+              <span>전체 뷰</span>
+            </button>
+            <button onclick="setCalendarMode('study')" id="cal-mode-study" class="cal-mode-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition flex items-center gap-1 shrink-0">
+              <i data-lucide="book-open" class="w-3.5 h-3.5 text-blue-500"></i>
+              <span>📚 공부(주합산)</span>
+            </button>
+            <button onclick="setCalendarMode('workout')" id="cal-mode-workout" class="cal-mode-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition flex items-center gap-1 shrink-0">
+              <i data-lucide="dumbbell" class="w-3.5 h-3.5 text-emerald-500"></i>
+              <span>🏃 운동</span>
+            </button>
+            <button onclick="setCalendarMode('sleep')" id="cal-mode-sleep" class="cal-mode-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition flex items-center gap-1 shrink-0">
+              <i data-lucide="moon-star" class="w-3.5 h-3.5 text-purple-500"></i>
+              <span>🛌 수면(7h)</span>
+            </button>
+            <!-- 사용자가 추가한 커스텀 루틴 칩들이 여기에 동적으로 삽입됨 -->
+            <div id="dynamic-habit-chips" class="flex items-center gap-1.5 shrink-0"></div>
+          </div>
+
+          <!-- 1-3. 선택된 항목의 월간/주간 요약 배너 -->
+          <div id="cal-mode-summary-banner" class="p-3 sm:p-4 rounded-xl bg-blue-50/80 dark:bg-slate-900/60 border border-blue-100 dark:border-slate-700 transition">
+            <!-- JS 동적 렌더링 -->
+          </div>
+
+          <!-- 1-4. 캘린더 월 이동 네비게이션 헤더 -->
+          <div class="flex items-center justify-between pt-1">
+            <div class="flex items-center gap-2">
+              <h3 class="text-base sm:text-lg font-bold text-slate-800 dark:text-white" id="monthly-calendar-month-title">2026년 11월</h3>
+              <div class="flex items-center gap-0.5">
+                <button onclick="changeMonthlyMonth(-1)" class="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
+                  <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                </button>
+                <button onclick="changeMonthlyMonth(1)" class="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
+                  <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                </button>
+              </div>
+            </div>
+            <!-- 범례 (Legend) -->
+            <div id="calendar-legend-container" class="flex items-center gap-2 text-[10px] sm:text-xs text-slate-500">
+              <!-- JS 동적 렌더링 -->
+            </div>
+          </div>
+
+          <!-- 1-5. 월간 달력 요일 헤더 (모바일: 7열, 데스크톱: 8열) -->
+          <div class="grid grid-cols-7 sm:grid-cols-8 gap-1 text-center font-bold text-[11px] sm:text-xs text-slate-400 py-1.5 border-b border-slate-100 dark:border-slate-700">
+            <span class="text-rose-500">일</span>
+            <span>월</span>
+            <span>화</span>
+            <span>수</span>
+            <span>목</span>
+            <span>금</span>
+            <span class="text-blue-500">토</span>
+            <span class="hidden sm:block text-indigo-600 dark:text-indigo-400 font-bold bg-indigo-50/50 dark:bg-indigo-950/40 rounded py-0.5">주간 합산</span>
+          </div>
+
+          <!-- 1-6. 대형 캘린더 날짜 셀 그리드 -->
+          <div class="grid grid-cols-7 sm:grid-cols-8 gap-1 sm:gap-1.5 pt-1" id="monthly-calendar-cells">
+            <!-- JS 렌더링 -->
+          </div>
+        </div>
+
+        <!-- 2. 월별 루틴 목표 등록 & 관리 카드 (달력 하단 배치) -->
+        <div class="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm">
+          <div class="flex items-center justify-between gap-2 mb-3">
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                <i data-lucide="target" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+              </div>
+              <div>
+                <h3 class="font-bold text-sm sm:text-base text-slate-800 dark:text-white flex items-center gap-1.5">
+                  <span id="monthly-routine-section-title">2026년 11월 루틴 목표</span>
+                </h3>
+              </div>
+            </div>
+            <button onclick="openMonthlyGoalModal()" class="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1 transition shadow-sm">
+              <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+              <span>+ 목표 등록</span>
+            </button>
+          </div>
+
+          <!-- 등록된 월별 루틴 목표 리스트 그리드 -->
+          <div id="monthly-goals-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            <!-- JS 렌더링 영역 -->
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ============================================== -->
+    <!-- TAB 3: 통계 & 리포트 (STATISTICS) -->
+    <!-- ============================================== -->
+    <section id="tab-stats" class="tab-content hidden space-y-6">
+      
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="text-xl font-bold text-slate-800 dark:text-white">성장 & 통계 분석</h2>
+          <p class="text-xs text-slate-500">공부 시간, 운동 빈도, 수면 패턴의 변화를 확인하세요.</p>
+        </div>
+
+        <!-- 기간 선택 필터 -->
+        <div class="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl text-xs font-semibold">
+          <button id="stats-range-7" onclick="setStatsRange(7)" class="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white">최근 7일</button>
+          <button id="stats-range-14" onclick="setStatsRange(14)" class="px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400">최근 14일</button>
+          <button id="stats-range-30" onclick="setStatsRange(30)" class="px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400">최근 30일</button>
+        </div>
+      </div>
+
+      <!-- 주요 지표 하이라이트 카드 4개 (모바일 2x2 세로 최적화) -->
+      <div class="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-4">
+        <!-- 1. 공부 통계 -->
+        <div class="bg-gradient-to-br from-blue-500 to-indigo-600 text-white p-3.5 sm:p-5 rounded-2xl shadow-sm">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] sm:text-xs font-semibold text-blue-100 uppercase">기간 총 공부</span>
+            <i data-lucide="book-open" class="w-4 h-4 sm:w-5 sm:h-5 text-blue-200"></i>
+          </div>
+          <div class="text-lg sm:text-2xl font-bold mt-1 sm:mt-2 truncate" id="stat-highlight-study">0시간 0분</div>
+          <p class="text-[10px] sm:text-xs text-blue-100 mt-0.5 sm:mt-1 truncate" id="stat-highlight-study-avg">일 평균 0시간</p>
+        </div>
+
+        <!-- 2. 운동 실천 및 내역 -->
+        <div class="bg-gradient-to-br from-emerald-500 to-teal-600 text-white p-3.5 sm:p-5 rounded-2xl shadow-sm">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] sm:text-xs font-semibold text-emerald-100 uppercase">운동 실천</span>
+            <i data-lucide="dumbbell" class="w-4 h-4 sm:w-5 sm:h-5 text-emerald-200"></i>
+          </div>
+          <div class="text-lg sm:text-2xl font-bold mt-1 sm:mt-2 truncate" id="stat-highlight-workout">0일 달성</div>
+          <p class="text-[10px] sm:text-xs text-emerald-100 mt-0.5 sm:mt-1 truncate" id="stat-highlight-workout-rate">총 0분 실천</p>
+        </div>
+
+        <!-- 3. 수면 7시간 기준 통계 -->
+        <div class="bg-gradient-to-br from-purple-500 to-pink-600 text-white p-3.5 sm:p-5 rounded-2xl shadow-sm">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] sm:text-xs font-semibold text-purple-100 uppercase">수면(7h)</span>
+            <i data-lucide="moon-star" class="w-4 h-4 sm:w-5 sm:h-5 text-purple-200"></i>
+          </div>
+          <div class="text-lg sm:text-2xl font-bold mt-1 sm:mt-2 truncate" id="stat-highlight-sleep">평균 0시간</div>
+          <p class="text-[10px] sm:text-xs text-purple-100 mt-0.5 sm:mt-1 truncate" id="stat-highlight-sleep-eval">7h 미달: 0일</p>
+        </div>
+
+        <!-- 4. 태만 방지 & 자기점검 지수 -->
+        <div class="bg-gradient-to-br from-slate-800 to-slate-900 text-white p-3.5 sm:p-5 rounded-2xl shadow-sm border border-slate-700">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] sm:text-xs font-semibold text-amber-300 uppercase">태만 점검</span>
+            <i data-lucide="alert-triangle" class="w-4 h-4 sm:w-5 sm:h-5 text-amber-400"></i>
+          </div>
+          <div class="text-lg sm:text-2xl font-bold mt-1 sm:mt-2 text-amber-400 truncate" id="stat-highlight-slacking">양호</div>
+          <p class="text-[10px] sm:text-xs text-slate-300 mt-0.5 sm:mt-1 truncate" id="stat-highlight-slacking-desc">공부 미달 0일</p>
+        </div>
+      </div>
+
+      <!-- 차트 그리드 -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- 차트 1: 일별 공부 시간 추이 (Bar Chart) -->
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-bold text-sm text-slate-800 dark:text-white flex items-center gap-2">
+              <i data-lucide="bar-chart-2" class="w-4 h-4 text-blue-500"></i>
+              일별 공부 시간 추이 (시간)
+            </h3>
+          </div>
+          <div class="relative h-64 w-full">
+            <canvas id="studyTimeChart"></canvas>
+          </div>
+        </div>
+
+        <!-- 차트 2: 일별 수면 시간 & 기상 패턴 (Line Chart) -->
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-bold text-sm text-slate-800 dark:text-white flex items-center gap-2">
+              <i data-lucide="trending-up" class="w-4 h-4 text-purple-500"></i>
+              수면 시간 추이 (시간)
+            </h3>
+          </div>
+          <div class="relative h-64 w-full">
+            <canvas id="sleepPatternChart"></canvas>
+          </div>
+        </div>
+
+        <!-- 차트 3: 할 일 카테고리별 달성 분포 (Doughnut Chart) -->
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-bold text-sm text-slate-800 dark:text-white flex items-center gap-2">
+              <i data-lucide="pie-chart" class="w-4 h-4 text-indigo-500"></i>
+              완료한 할 일 카테고리 비중
+            </h3>
+          </div>
+          <div class="relative h-64 w-full flex items-center justify-center">
+            <canvas id="todoCategoryChart"></canvas>
+          </div>
+        </div>
+
+        <!-- 차트 4: 최근 30일 잔디 심기 (Streak Heatmap) -->
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-bold text-sm text-slate-800 dark:text-white flex items-center gap-2">
+              <i data-lucide="sparkles" class="w-4 h-4 text-emerald-500"></i>
+              최근 30일 성취 잔디 (Streak)
+            </h3>
+            <span class="text-xs text-slate-400">색이 진할수록 높은 달성률</span>
+          </div>
+          <div id="streak-heatmap-container" class="grid grid-cols-6 sm:grid-cols-10 gap-2 py-3">
+            <!-- JS 렌더링 -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 운동 실천 상세 기록장 (어떤 운동을 얼만큼 했는지 확인) -->
+      <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+              <i data-lucide="list-checks" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h3 class="font-bold text-base text-slate-800 dark:text-white">기간 내 운동 실천 일지</h3>
+              <p class="text-xs text-slate-500">어떤 운동을 몇 분 동안, 어떤 루틴으로 실천했는지 확인하세요.</p>
+            </div>
+          </div>
+          <span class="text-xs text-slate-400" id="workout-history-count">총 0회 실천</span>
+        </div>
+        <div id="workout-history-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <!-- JS 렌더링 -->
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- 월별 루틴 목표 등록/수정 모달 -->
+  <div id="monthly-goal-modal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm custom-modal items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-lg w-full p-6 border border-slate-200 dark:border-slate-700 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-3">
+        <h3 class="font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
+          <i data-lucide="target" class="w-5 h-5 text-indigo-500"></i>
+          <span>월별 루틴 목표 등록</span>
+        </h3>
+        <button onclick="closeMonthlyGoalModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="monthly-goal-form" onsubmit="handleSaveMonthlyGoal(event)" class="space-y-4 text-sm">
+        <input type="hidden" id="monthly-goal-id">
+
+        <!-- 목표명 -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">목표 루틴명 *</label>
+          <input type="text" id="monthly-goal-title" required placeholder="예: 주 4회 헬스장 출석, 매일 영어 단어 외우기, 수면 7시간" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+
+        <!-- 카테고리 -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">카테고리</label>
+          <select id="monthly-goal-cat" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="운동/건강">🏃 운동/건강</option>
+            <option value="공부">📚 공부</option>
+            <option value="수면/생활">🛌 수면/생활습관</option>
+            <option value="루틴">⭐ 데일리 루틴</option>
+            <option value="업무/자기계발">💻 업무/자기계발</option>
+          </select>
+        </div>
+
+        <!-- 기간 설정 -->
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">실천 기간 설정 *</label>
+            <div class="flex gap-1 text-[11px]">
+              <button type="button" onclick="setGoalPeriodPreset('full')" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300">이달 전체</button>
+              <button type="button" onclick="setGoalPeriodPreset('firstHalf')" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300">전반기 (1~15일)</button>
+              <button type="button" onclick="setGoalPeriodPreset('secondHalf')" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300">후반기 (16~말일)</button>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <span class="text-[11px] text-slate-400 block mb-0.5">시작일</span>
+              <input type="date" id="monthly-goal-start" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div>
+              <span class="text-[11px] text-slate-400 block mb-0.5">종료일</span>
+              <input type="date" id="monthly-goal-end" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+          </div>
+        </div>
+
+        <!-- 트래킹 및 집계 연동 방식 -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">실천 달성 연동</label>
+            <select id="monthly-goal-track-type" onchange="onTrackTypeChange(this.value)" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="workout">🏃 운동 기록 연동 (자동 집계)</option>
+              <option value="study">📚 공부 기록 연동 (자동 집계)</option>
+              <option value="manual">✋ 수동 스탬프 체크 (직접 클릭)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">목표 실천 일수 *</label>
+            <div class="flex items-center gap-2">
+              <input type="number" id="monthly-goal-target-days" min="1" max="31" value="15" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <span class="text-xs text-slate-500 whitespace-nowrap">일 달성</span>
+            </div>
+          </div>
+        </div>
+
+        <p class="text-xs text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 p-2.5 rounded-xl border border-indigo-100 dark:border-indigo-900/30" id="monthly-goal-hint-text">
+          💡 운동 기록 연동: 설정한 기간 중 매일 운동을 완료 체크할 때마다 자동으로 실천 일수가 카운트됩니다.
+        </p>
+
+        <!-- 버튼 -->
+        <div class="pt-3 border-t border-slate-100 dark:border-slate-700 flex justify-end gap-2">
+          <button type="button" onclick="closeMonthlyGoalModal()" class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-medium transition">
+            취소
+          </button>
+          <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold transition shadow-sm shadow-indigo-500/20">
+            목표 저장하기
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 커스텀 루틴/할 일 관리 모달 -->
+  <div id="habit-manager-modal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm custom-modal items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-700 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-3">
+        <h3 class="font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
+          <i data-lucide="sparkles" class="w-5 h-5 text-indigo-500"></i>
+          <span>관리할 루틴 / 할 일 추가</span>
+        </h3>
+        <button onclick="closeHabitManagerModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <p class="text-xs text-slate-500">
+        공부, 운동, 수면 외에 매일 체크하고 달력에서 관리하고 싶은 나만의 루틴(예: 독서, 영양제, 어학 등)을 등록하세요.
+      </p>
+
+      <!-- 루틴 등록 폼 -->
+      <form id="add-habit-form" onsubmit="handleCreateHabit(event)" class="space-y-3 bg-slate-50 dark:bg-slate-900/60 p-3.5 rounded-xl border border-slate-100 dark:border-slate-800">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">루틴 이름 *</label>
+          <input type="text" id="new-habit-title" required placeholder="예: 매일 독서 30분, 비타민 챙겨먹기, 어학 단어장" class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">카테고리</label>
+            <select id="new-habit-category" class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="독서/자기계발">📖 독서/자기계발</option>
+              <option value="건강/식습관">🥗 건강/식습관</option>
+              <option value="생활습관">⭐ 생활습관</option>
+              <option value="어학/자격증">🔤 어학/자격증</option>
+              <option value="기타">✏️ 기타</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">아이콘/이모지</label>
+            <select id="new-habit-icon" class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="📖">📖 책</option>
+              <option value="💊">💊 영양제</option>
+              <option value="💧">💧 물 마시기</option>
+              <option value="🧘">🧘 명상/스트레칭</option>
+              <option value="💻">💻 코딩/작업</option>
+              <option value="⭐">⭐ 별</option>
+            </select>
+          </div>
+        </div>
+        <button type="submit" class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold transition">
+          + 루틴 항목 추가하기
+        </button>
+      </form>
+
+      <!-- 등록된 루틴 목록 -->
+      <div>
+        <h4 class="text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">현재 관리 중인 루틴 목록</h4>
+        <div id="habit-manager-list" class="space-y-2">
+          <!-- JS 렌더링 -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 데이터 관리 및 백업 모달 -->
+  <div id="data-modal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm custom-modal items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-700 shadow-xl space-y-5">
+      <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-3">
+        <h3 class="font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
+          <i data-lucide="database" class="w-5 h-5 text-indigo-500"></i>
+          데이터 백업 및 샘플 로드
+        </h3>
+        <button onclick="closeDataModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-4 text-sm">
+        <!-- 샘플 데이터 채우기 -->
+        <div class="bg-indigo-50 dark:bg-indigo-950/40 p-4 rounded-xl border border-indigo-100 dark:border-indigo-900/30">
+          <div class="font-semibold text-indigo-950 dark:text-indigo-200 mb-1">✨ 체험용 샘플 데이터 채우기</div>
+          <p class="text-xs text-indigo-700 dark:text-indigo-300 mb-3">최근 7일간의 공부 시간, 운동 기록, 수면 시간 및 할 일 예시 데이터를 자동으로 채워 차트와 캘린더를 바로 확인합니다.</p>
+          <button onclick="loadSampleData()" class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold transition">
+            샘플 데이터 7일치 채우기
+          </button>
+        </div>
+
+        <!-- 백업 (JSON 내보내기 / 불러오기) -->
+        <div class="space-y-2">
+          <div class="font-semibold text-slate-700 dark:text-slate-300">내 데이터 백업 / 복원</div>
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="exportDataJson()" class="py-2 px-3 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg text-xs font-medium flex items-center justify-center gap-1 transition">
+              <i data-lucide="download" class="w-4 h-4"></i>
+              백업 파일 다운로드
+            </button>
+            <label class="py-2 px-3 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg text-xs font-medium flex items-center justify-center gap-1 cursor-pointer transition">
+              <i data-lucide="upload" class="w-4 h-4"></i>
+              백업 파일 복원
+              <input type="file" id="import-file-input" accept=".json" onchange="importDataJson(event)" class="hidden">
+            </label>
+          </div>
+        </div>
+
+        <!-- 전체 데이터 초기화 -->
+        <div class="pt-2 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center text-xs">
+          <span class="text-rose-500 font-medium">모든 데이터 초기화</span>
+          <button onclick="clearAllData()" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 rounded-lg font-medium transition">
+            초기화하기
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 모바일 하단 고정 네비게이션 바 (세로 모드 최적화) -->
+  <nav class="fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200/90 dark:border-slate-800 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] sm:hidden">
+    <div class="max-w-md mx-auto grid grid-cols-3 h-16 px-2">
+      <button id="bottom-tab-today" onclick="switchTab('today')" class="bottom-nav-btn flex flex-col items-center justify-center gap-1 text-indigo-600 dark:text-indigo-400 font-bold transition">
+        <i data-lucide="check-square" class="w-5 h-5"></i>
+        <span class="text-[11px]">오늘 실천</span>
+      </button>
+      <button id="bottom-tab-plan" onclick="switchToCalendarTab()" class="bottom-nav-btn flex flex-col items-center justify-center gap-1 text-slate-400 dark:text-slate-500 font-medium hover:text-indigo-600 transition">
+        <i data-lucide="calendar" class="w-5 h-5"></i>
+        <span class="text-[11px]">대형 달력</span>
+      </button>
+      <button id="bottom-tab-stats" onclick="switchTab('stats')" class="bottom-nav-btn flex flex-col items-center justify-center gap-1 text-slate-400 dark:text-slate-500 font-medium hover:text-indigo-600 transition">
+        <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+        <span class="text-[11px]">통계·리포트</span>
+      </button>
+    </div>
+  </nav>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,107 @@
+/* 사용자 정의 스타일 및 부드러운 애니메이션 */
+
+@import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&display=swap');
+
+body {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 탭 활성화 스타일 */
+.nav-tab.active {
+  background-color: white;
+  color: #4f46e5;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.dark .nav-tab.active {
+  background-color: #334155;
+  color: #818cf8;
+}
+
+/* 할 일 완료 체크 시 텍스트 효과 */
+.todo-completed-text {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+/* 부드러운 모션 트랜지션 */
+.transition-smooth {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 커스텀 스크롤바 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.6);
+}
+
+/* 캘린더 날짜 타일 hover 효과 */
+.calendar-tile {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.calendar-tile:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* 잔디 히트맵 셀 애니메이션 */
+.streak-cell {
+  transition: transform 0.15s ease;
+}
+.streak-cell:hover {
+  transform: scale(1.15);
+}
+
+/* 모달 안전 제어 (절대 클릭 가림 방지) */
+.custom-modal {
+  display: none !important;
+}
+.custom-modal.modal-open {
+  display: flex !important;
+}
+
+/* 모바일 세로 뷰 최적화 */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 가로 스크롤바 숨김 (칩 필터 등) */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* 터치 버튼 피드백 */
+button:active {
+  transform: scale(0.98);
+}
+
+/* 폼 컨트롤 모바일 최적화 */
+@media (max-width: 640px) {
+  input[type="number"],
+  input[type="text"],
+  input[type="date"],
+  select {
+    font-size: 15px !important;
+  }
+}
