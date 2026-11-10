@@ -235,13 +235,13 @@
           </div>
         </div>
 
-        <!-- 2. 운동 여부 & 4개 종목 선택 (줌바, 헬스, 자전거, 그외) -->
+        <!-- 2. 운동 여부 & 종목 선택 (줌바, 헬스, 자전거, 그외) -->
         <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm flex flex-col justify-between">
           <div>
             <div class="flex items-center justify-between mb-3">
               <div class="flex items-center gap-2 font-bold text-slate-800 dark:text-white">
                 <i data-lucide="dumbbell" class="w-5 h-5 text-emerald-500"></i>
-                <span>운동 기록 (4개 종목 선택)</span>
+                <span>운동 기록</span>
               </div>
               <label class="relative inline-flex items-center cursor-pointer">
                 <input type="checkbox" id="workout-toggle" onchange="toggleWorkoutDone(this.checked)" class="sr-only peer">
@@ -259,9 +259,9 @@
             </div>
 
             <div class="space-y-3">
-              <!-- 운동 종목 4개 선택 버튼 -->
+              <!-- 운동 종목 선택 버튼 -->
               <div>
-                <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1.5">운동 종목 선택 *</label>
+                <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1.5">종목 선택</label>
                 <div class="grid grid-cols-2 gap-2" id="workout-type-btn-group">
                   <button type="button" onclick="selectWorkoutType('줌바')" data-val="줌바" class="workout-choice-btn py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 hover:border-emerald-500 transition">
                     <span>💃</span><span>줌바</span>
@@ -281,7 +281,7 @@
 
               <!-- 운동 시간 입력 -->
               <div>
-                <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">운동 시간 (분 단위) *</label>
+                <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">운동 시간</label>
                 <div class="flex items-center gap-2">
                   <input type="number" id="workout-duration-input" min="0" step="5" placeholder="예: 60" class="flex-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-center focus:outline-none focus:ring-2 focus:ring-emerald-500">
                   <span class="text-xs font-medium text-slate-500">분 실천</span>
