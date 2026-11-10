@@ -22,9 +22,41 @@ const state = {
   monthlyGoals: [],             // [ { id, title, category, startDate, endDate, trackType, targetDays, currentDays, memo } ]
   studyTargetHours: 3,          // 일일 목표 공부 시간 (기본 3시간)
   studyWeeklyTargetHours: 21,   // 주간 목표 공부 시간 (기본 21시간)
+  sleepTargetHours: 7,          // 기준 수면 시간 (기본 7시간)
+  sleepTargetMins: 0,           // 기준 수면 분 (기본 0분)
+  workoutTargetMinutes: 40,     // 일일 목표 운동 시간 (기본 40분)
+  workoutWeeklyTargetDays: 4,   // 주간 목표 운동 일수 (기본 4일)
   calendarMode: 'study',        // 'study' | 'workout' | 'sleep' | 'all' | 'habit_<id>'
   customHabits: []              // [ { id, title, category, icon, createdAt } ]
 };
+
+// ==========================================
+// 목표 기준 헬퍼 함수
+// ==========================================
+function getSleepTargetMinutes() {
+  const h = typeof state.sleepTargetHours === 'number' ? state.sleepTargetHours : 7;
+  const m = typeof state.sleepTargetMins === 'number' ? state.sleepTargetMins : 0;
+  return (h * 60) + m;
+}
+
+function getSleepTargetText() {
+  const h = typeof state.sleepTargetHours === 'number' ? state.sleepTargetHours : 7;
+  const m = typeof state.sleepTargetMins === 'number' ? state.sleepTargetMins : 0;
+  return m > 0 ? `${h}시간 ${m}분` : `${h}시간`;
+}
+
+function getStudyTargetMinutes() {
+  const h = typeof state.studyTargetHours === 'number' ? state.studyTargetHours : 3;
+  return h * 60;
+}
+
+function getWorkoutTargetMinutes() {
+  return typeof state.workoutTargetMinutes === 'number' ? state.workoutTargetMinutes : 40;
+}
+
+function getWorkoutWeeklyTargetDays() {
+  return typeof state.workoutWeeklyTargetDays === 'number' ? state.workoutWeeklyTargetDays : 4;
+}
 
 // 스톱워치 상태
 let swInterval = null;
@@ -94,8 +126,12 @@ function loadData() {
       state.todos = parsed.todos || [];
       state.weeklyGoals = parsed.weeklyGoals || [];
       state.monthlyGoals = parsed.monthlyGoals || [];
-      state.studyTargetHours = parsed.studyTargetHours || 3;
-      state.studyWeeklyTargetHours = parsed.studyWeeklyTargetHours || 21;
+      state.studyTargetHours = parsed.studyTargetHours ?? 3;
+      state.studyWeeklyTargetHours = parsed.studyWeeklyTargetHours ?? 21;
+      state.sleepTargetHours = parsed.sleepTargetHours ?? 7;
+      state.sleepTargetMins = parsed.sleepTargetMins ?? 0;
+      state.workoutTargetMinutes = parsed.workoutTargetMinutes ?? 40;
+      state.workoutWeeklyTargetDays = parsed.workoutWeeklyTargetDays ?? 4;
       state.calendarMode = parsed.calendarMode || 'study';
       state.customHabits = parsed.customHabits || [];
     }
@@ -118,6 +154,10 @@ function saveData() {
       monthlyGoals: state.monthlyGoals,
       studyTargetHours: state.studyTargetHours || 3,
       studyWeeklyTargetHours: state.studyWeeklyTargetHours || 21,
+      sleepTargetHours: state.sleepTargetHours ?? 7,
+      sleepTargetMins: state.sleepTargetMins ?? 0,
+      workoutTargetMinutes: state.workoutTargetMinutes ?? 40,
+      workoutWeeklyTargetDays: state.workoutWeeklyTargetDays ?? 4,
       calendarMode: state.calendarMode || 'study',
       customHabits: state.customHabits || []
     };
@@ -389,40 +429,45 @@ function updateSleep7hUI(durationMins) {
   const calcDisplay = document.getElementById('calc-sleep-display');
   const statusText = document.getElementById('sleep-7h-status-text');
   const evalTag = document.getElementById('sleep-eval-tag');
+  const targetSleepM = getSleepTargetMinutes();
+  const sleepTargetText = getSleepTargetText();
+
+  const sleepHeader = document.getElementById('sleep-card-header-title');
+  if (sleepHeader) sleepHeader.textContent = `수면 시간 (기준 ${sleepTargetText})`;
 
   if (!calcDisplay || !statusText || !evalTag) return;
 
   if (durationMins <= 0) {
     calcDisplay.textContent = '0시간 0분';
-    statusText.textContent = '7시간 기준: 수면 시간을 입력해주세요.';
-    statusText.className = 'mt-2 text-xs font-medium text-slate-500';
+    statusText.textContent = `${sleepTargetText} 기준: 수면 시간을 입력해주세요.`;
+    statusText.className = 'mt-1.5 text-xs font-medium text-slate-500';
     evalTag.textContent = '기록대기';
     evalTag.className = 'text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500';
     return;
   }
 
   calcDisplay.textContent = formatMinutes(durationMins);
-  const diff = durationMins - 420; // 7시간 = 420분
+  const diff = durationMins - targetSleepM;
 
   if (diff >= 0 && diff <= 120) {
-    // 7시간 이상 ~ 9시간 이하: 최적 수면
-    evalTag.textContent = '7h 충족 ✅';
+    // 기준 이상 ~ 2시간 초과 이하: 최적 수면
+    evalTag.textContent = `${sleepTargetText} 충족 ✅`;
     evalTag.className = 'text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300';
-    statusText.textContent = `7시간 기준: +${formatMinutes(diff)} 충분 (적정 수면 달성 👍)`;
-    statusText.className = 'mt-2 text-xs font-bold text-emerald-600 dark:text-emerald-400';
+    statusText.textContent = `${sleepTargetText} 기준: +${formatMinutes(diff)} 충분 (적정 수면 달성 👍)`;
+    statusText.className = 'mt-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400';
   } else if (diff > 120) {
-    // 9시간 초과: 과수면
+    // 2시간 초과: 과수면
     evalTag.textContent = '과수면 😴';
     evalTag.className = 'text-xs font-bold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300';
-    statusText.textContent = `7시간 기준: +${formatMinutes(diff)} 초과 (과수면 주의 😴)`;
-    statusText.className = 'mt-2 text-xs font-bold text-indigo-600 dark:text-indigo-400';
+    statusText.textContent = `${sleepTargetText} 기준: +${formatMinutes(diff)} 초과 (과수면 주의 😴)`;
+    statusText.className = 'mt-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400';
   } else {
-    // 7시간 미만: 수면 미달
+    // 미달
     const lackMins = Math.abs(diff);
-    evalTag.textContent = '7h 미달 ⚠️';
+    evalTag.textContent = `${sleepTargetText} 미달 ⚠️`;
     evalTag.className = 'text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300';
-    statusText.textContent = `7시간 기준: ${formatMinutes(lackMins)} 부족 ⚠️ (컨디션/피로 주의)`;
-    statusText.className = 'mt-2 text-xs font-bold text-amber-600 dark:text-amber-400';
+    statusText.textContent = `${sleepTargetText} 기준: ${formatMinutes(lackMins)} 부족 ⚠️ (컨디션/피로 주의)`;
+    statusText.className = 'mt-1.5 text-xs font-bold text-amber-600 dark:text-amber-400';
   }
 }
 
@@ -453,55 +498,72 @@ function renderSummaryCards(rec) {
   const isStudyPassed = studyMins >= targetMins;
 
   document.getElementById('summary-study-time').textContent = formatMinutes(studyMins);
-  document.getElementById('summary-study-target').textContent = `목표: ${targetH}시간 (${isStudyPassed ? '달성' : '미달'})`;
+  document.getElementById('summary-study-target').textContent = `목표: ${targetH}시간 (${isStudyPassed ? '달성' : '미달'}) ✏️`;
   const studyBadge = document.getElementById('study-status-badge');
   if (studyBadge) {
     if (isStudyPassed) {
       studyBadge.textContent = '달성 🎉';
-      studyBadge.className = 'text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300';
+      studyBadge.className = 'text-[9px] sm:text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300';
     } else {
       studyBadge.textContent = '미달 ⚠️';
-      studyBadge.className = 'text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300';
+      studyBadge.className = 'text-[9px] sm:text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300';
     }
   }
 
-  // 3. 운동 요약
+  // 3. 운동 요약 & 목표
   const wo = rec.workout || {};
-  if (wo.done) {
-    document.getElementById('summary-workout-status').textContent = `${wo.type || '운동'} 완료`;
-    document.getElementById('summary-workout-detail').textContent = `${wo.duration || 0}분 실천 (${wo.note || '루틴 완료'})`;
-  } else {
-    document.getElementById('summary-workout-status').textContent = '미실천';
-    document.getElementById('summary-workout-detail').textContent = '운동 쉰 날';
+  const workoutTargetM = getWorkoutTargetMinutes();
+  const workoutWeeklyDays = getWorkoutWeeklyTargetDays();
+  const workoutTargetBadge = document.getElementById('workout-target-badge');
+  if (workoutTargetBadge) {
+    workoutTargetBadge.textContent = `목표: ${workoutTargetM}m`;
+  }
+  const cardWorkoutTargetText = document.getElementById('card-workout-target-text');
+  if (cardWorkoutTargetText) {
+    cardWorkoutTargetText.textContent = `목표: ${workoutTargetM}분 실천 (주 ${workoutWeeklyDays}일)`;
   }
 
-  // 4. 수면 요약 (7시간 기준)
+  if (wo.done) {
+    const isWorkoutTimePass = (wo.duration || 0) >= workoutTargetM;
+    document.getElementById('summary-workout-status').textContent = `${wo.type || '운동'} 완료 ${isWorkoutTimePass ? '🔥' : '👍'}`;
+    document.getElementById('summary-workout-detail').textContent = `${wo.duration || 0}분 (${isWorkoutTimePass ? '목표 달성' : `${workoutTargetM}분 목표`})`;
+  } else {
+    document.getElementById('summary-workout-status').textContent = '미실천';
+    document.getElementById('summary-workout-detail').textContent = `오늘 목표: ${workoutTargetM}분`;
+  }
+
+  // 4. 수면 요약 (사용자 지정 기준)
   const sl = rec.sleep || {};
   const sleepM = sl.durationMinutes || 0;
+  const targetSleepM = getSleepTargetMinutes();
+  const sleepTargetText = getSleepTargetText();
   const sleepDiffBadge = document.getElementById('sleep-diff-badge');
+
+  const sleepLabel = document.getElementById('summary-sleep-label');
+  if (sleepLabel) sleepLabel.textContent = `수면(${sleepTargetText})`;
 
   if (sleepM > 0) {
     document.getElementById('summary-sleep-time').textContent = formatMinutes(sleepM);
-    const diff = sleepM - 420;
+    const diff = sleepM - targetSleepM;
     if (diff >= 0) {
-      document.getElementById('summary-sleep-range').textContent = `7시간 기준 +${formatMinutes(diff)} (충족)`;
+      document.getElementById('summary-sleep-range').textContent = `${sleepTargetText} 기준 +${formatMinutes(diff)} (충족) ✏️`;
       if (sleepDiffBadge) {
-        sleepDiffBadge.textContent = '7h 충족';
-        sleepDiffBadge.className = 'text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300';
+        sleepDiffBadge.textContent = '충족 ✅';
+        sleepDiffBadge.className = 'text-[9px] sm:text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300';
       }
     } else {
-      document.getElementById('summary-sleep-range').textContent = `7시간 기준 ${formatMinutes(Math.abs(diff))} 미달`;
+      document.getElementById('summary-sleep-range').textContent = `${sleepTargetText} 기준 ${formatMinutes(Math.abs(diff))} 미달 ✏️`;
       if (sleepDiffBadge) {
-        sleepDiffBadge.textContent = '7h 미달';
-        sleepDiffBadge.className = 'text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300';
+        sleepDiffBadge.textContent = '미달 ⚠️';
+        sleepDiffBadge.className = 'text-[9px] sm:text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300';
       }
     }
   } else {
     document.getElementById('summary-sleep-time').textContent = '0시간 0분';
-    document.getElementById('summary-sleep-range').textContent = '수면 기록 없음';
+    document.getElementById('summary-sleep-range').textContent = `기준: ${sleepTargetText} ✏️`;
     if (sleepDiffBadge) {
       sleepDiffBadge.textContent = '미기록';
-      sleepDiffBadge.className = 'text-[10px] font-bold px-1.5 py-0.2 rounded bg-slate-100 text-slate-500 dark:bg-slate-700';
+      sleepDiffBadge.className = 'text-[9px] sm:text-[10px] font-bold px-1.5 py-0.2 rounded bg-slate-100 text-slate-500 dark:bg-slate-700';
     }
   }
 
@@ -512,12 +574,24 @@ function renderSummaryCards(rec) {
     if (isStudyPassed) score += 35;
     else if (studyMins > 0) score += 15;
 
-    if (wo.done) score += 30;
-    if (sleepM >= 420) score += 15;
+    if (wo.done && (wo.duration || 0) >= workoutTargetM) score += 30;
+    else if (wo.done) score += 20;
+
+    if (sleepM >= targetSleepM) score += 15;
     if (totalCount > 0 && todoRate >= 70) score += 20;
 
     if (score >= 80) {
       disciplineBadge.textContent = '성실 달성 🔥';
+      disciplineBadge.className = 'text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300';
+    } else if (score >= 50) {
+      disciplineBadge.textContent = '보통 실천 ⚡';
+      disciplineBadge.className = 'text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300';
+    } else {
+      disciplineBadge.textContent = '태만 주의 🚨';
+      disciplineBadge.className = 'text-[11px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 animate-pulse';
+    }
+  }
+}
       disciplineBadge.className = 'text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300';
     } else if (score >= 50) {
       disciplineBadge.textContent = '보통 실천 ⚡';
@@ -686,11 +760,13 @@ function saveSleepRecordSimple() {
   saveData();
   renderTodayView();
 
-  const diff = diffMins - 420;
+  const targetSleepM = getSleepTargetMinutes();
+  const sleepTargetText = getSleepTargetText();
+  const diff = diffMins - targetSleepM;
   if (diff >= 0) {
-    alert(`🛌 수면 기록 저장 완료: ${formatMinutes(diffMins)}\n✅ 7시간 수면 기준을 충족했습니다! (+${formatMinutes(diff)})`);
+    alert(`🛌 수면 기록 저장 완료: ${formatMinutes(diffMins)}\n✅ ${sleepTargetText} 수면 기준을 충족했습니다! (+${formatMinutes(diff)})`);
   } else {
-    alert(`🛌 수면 기록 저장 완료: ${formatMinutes(diffMins)}\n⚠️ 7시간 기준 ${formatMinutes(Math.abs(diff))} 부족합니다.`);
+    alert(`🛌 수면 기록 저장 완료: ${formatMinutes(diffMins)}\n⚠️ ${sleepTargetText} 기준 ${formatMinutes(Math.abs(diff))} 부족합니다.`);
   }
 }
 
@@ -942,13 +1018,15 @@ function renderWeeklyView() {
       }
     }
 
-    // 수면 7시간 기준 집계
+    // 수면 기준 집계
     const slM = dayRec.sleep?.durationMinutes || 0;
+    const targetSleepM = getSleepTargetMinutes();
+    const sleepTargetText = getSleepTargetText();
     let sleepPassed = false;
     if (slM > 0) {
       weekSleepDays++;
       weekTotalSleepMins += slM;
-      if (slM >= 420) {
+      if (slM >= targetSleepM) {
         weekSleepPassDays++;
         sleepPassed = true;
       } else {
@@ -977,11 +1055,11 @@ function renderWeeklyView() {
             </span>
           </div>
 
-          <!-- 수면 7시간 기준 -->
+          <!-- 수면 기준 -->
           <div class="flex items-center justify-between">
             <span class="text-slate-500">🛌 수면</span>
-            <span class="font-semibold ${slM >= 420 ? 'text-purple-600 dark:text-purple-400 font-bold' : slM > 0 ? 'text-amber-500' : 'text-slate-400'}">
-              ${slM > 0 ? (slM >= 420 ? '7h 충족' : '7h 미달') : '-'}
+            <span class="font-semibold ${slM >= targetSleepM ? 'text-purple-600 dark:text-purple-400 font-bold' : slM > 0 ? 'text-amber-500' : 'text-slate-400'}">
+              ${slM > 0 ? (slM >= targetSleepM ? '충족' : '미달') : '-'}
             </span>
           </div>
 
@@ -1018,20 +1096,24 @@ function renderWeeklyView() {
   }
 
   // 2. 주간 운동 UI 반영
-  document.getElementById('weekly-workout-pass-badge').textContent = `${weekWorkoutCount}일 실천`;
+  const workoutTargetDays = getWorkoutWeeklyTargetDays();
+  const isWorkoutWeekPassed = weekWorkoutCount >= workoutTargetDays;
+  document.getElementById('weekly-workout-pass-badge').textContent = `${weekWorkoutCount}/${workoutTargetDays}일 실천 (${isWorkoutWeekPassed ? '달성' : '진행중'})`;
   document.getElementById('weekly-workout-duration').textContent = `총 ${weekWorkoutTotalMins}분`;
   document.getElementById('weekly-workout-types-summary').textContent = weekWorkoutTypes.length > 0 
     ? `실천 종목: ${weekWorkoutTypes.join(', ')}` 
     : '운동 쉰 주간';
 
-  // 3. 주간 수면 (7시간 기준) UI 반영
+  // 3. 주간 수면 (사용자 지정 기준) UI 반영
+  const targetSleepMWeekly = getSleepTargetMinutes();
+  const sleepTargetTextWeekly = getSleepTargetText();
   const avgSleep = weekSleepDays > 0 ? Math.round(weekTotalSleepMins / weekSleepDays) : 0;
   document.getElementById('weekly-sleep-avg').textContent = `평균 ${formatMinutes(avgSleep)}`;
-  document.getElementById('weekly-sleep-pass-count').textContent = `7h 이상: ${weekSleepPassDays}일`;
-  document.getElementById('weekly-sleep-fail-count').textContent = `7h 미달: ${weekSleepFailDays}일`;
+  document.getElementById('weekly-sleep-pass-count').textContent = `${sleepTargetTextWeekly} 이상: ${weekSleepPassDays}일`;
+  document.getElementById('weekly-sleep-fail-count').textContent = `${sleepTargetTextWeekly} 미달: ${weekSleepFailDays}일`;
   const sleepEvalBadge = document.getElementById('weekly-sleep-eval-badge');
   if (sleepEvalBadge) {
-    if (avgSleep >= 420) {
+    if (avgSleep >= targetSleepMWeekly) {
       sleepEvalBadge.textContent = '수면 양호 ✅';
       sleepEvalBadge.className = 'font-bold text-emerald-300';
     } else {
@@ -1043,7 +1125,7 @@ function renderWeeklyView() {
   // 4. 주간 종합 자기점검 점수
   let disciplineScore = 0;
   disciplineScore += Math.min(40, Math.round((weekTotalStudyMins / weekTargetStudyMins) * 40));
-  disciplineScore += Math.min(30, Math.round((weekWorkoutCount / 4) * 30));
+  disciplineScore += Math.min(30, Math.round((weekWorkoutCount / workoutTargetDays) * 30));
   disciplineScore += Math.min(30, Math.round((weekSleepPassDays / Math.max(1, weekSleepDays)) * 30));
   disciplineScore = Math.min(100, disciplineScore);
 
@@ -1257,14 +1339,16 @@ function renderMonthlyCalendar() {
         monthWorkoutTotalMins += (wo.duration || 0);
       }
 
-      // 수면 데이터 집계
+      // 수면 데이터 집계 (사용자 지정 기준)
       const slM = rec.sleep?.durationMinutes || 0;
+      const targetSleepM = getSleepTargetMinutes();
+      const sleepTargetText = getSleepTargetText();
       if (slM > 0) {
         weekSleepDays++;
         weekSleepMins += slM;
         monthSleepRecordedDays++;
         monthSleepTotalMins += slM;
-        if (slM >= 420) {
+        if (slM >= targetSleepM) {
           weekSleepPass++;
           monthSleepPassDays++;
         } else {
@@ -1308,13 +1392,14 @@ function renderMonthlyCalendar() {
       } else if (isWorkoutMode) {
         // [운동 전용 달력 모드]
         if (wo.done) {
+          const isWorkoutPass = (wo.duration || 0) >= getWorkoutTargetMinutes();
           cellBodyHtml = `
             <div class="mt-1 space-y-0.5">
               <span class="inline-block text-[11px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 truncate w-full">
                 🏃 ${escapeHtml(wo.type || '운동')}
               </span>
-              <div class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
-                ${wo.duration ? wo.duration + '분 실천' : '완료'}
+              <div class="text-[11px] font-bold ${isWorkoutPass ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500'}">
+                ${wo.duration ? wo.duration + '분' : '완료'} ${isWorkoutPass ? '🔥' : ''}
               </div>
             </div>
           `;
@@ -1323,9 +1408,9 @@ function renderMonthlyCalendar() {
           cellBodyHtml = `<div class="mt-2 text-xs text-slate-300 dark:text-slate-600">휴식 (X)</div>`;
         }
       } else if (isSleepMode) {
-        // [수면 7시간 전용 달력 모드]
+        // [수면 전용 달력 모드]
         if (slM > 0) {
-          const diff = slM - 420;
+          const diff = slM - targetSleepM;
           const isPass = diff >= 0;
           cellBodyHtml = `
             <div class="mt-1">
@@ -1358,7 +1443,7 @@ function renderMonthlyCalendar() {
           <div class="text-[10px] space-y-0.5 mt-1 text-slate-500 dark:text-slate-400">
             ${sM > 0 ? `<div class="truncate ${studyPassed ? 'text-blue-600 dark:text-blue-400 font-bold' : 'text-slate-500'}">📚 ${formatMinutes(sM)}</div>` : ''}
             ${wo.done ? `<div class="truncate text-emerald-600 dark:text-emerald-400 font-medium">🏃 ${wo.type || '운동'}</div>` : ''}
-            ${slM > 0 ? `<div class="truncate ${slM >= 420 ? 'text-purple-600 dark:text-purple-400 font-bold' : 'text-amber-500'}">🛌 ${slM >= 420 ? '7h+' : '7h-'}</div>` : ''}
+            ${slM > 0 ? `<div class="truncate ${slM >= targetSleepM ? 'text-purple-600 dark:text-purple-400 font-bold' : 'text-amber-500'}">🛌 ${slM >= targetSleepM ? '충족' : '미달'}</div>` : ''}
           </div>
         `;
       }
@@ -1369,7 +1454,7 @@ function renderMonthlyCalendar() {
             <span class="text-[11px] sm:text-xs font-bold ${isToday ? 'px-1.5 py-0.2 rounded-full bg-indigo-600 text-white' : 'text-slate-700 dark:text-slate-300'}">${d}</span>
             ${studyPassed && isStudyMode ? '<span class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-500"></span>' : ''}
             ${wo.done && isWorkoutMode ? '<span class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-500"></span>' : ''}
-            ${slM >= 420 && isSleepMode ? '<span class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-purple-500"></span>' : ''}
+            ${slM >= targetSleepM && isSleepMode ? '<span class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-purple-500"></span>' : ''}
           </div>
           ${cellBodyHtml}
         </div>
@@ -1424,7 +1509,7 @@ function renderMonthlyCalendar() {
             <div class="text-xs sm:text-sm font-bold text-purple-800 dark:text-purple-200 sm:mt-1">평균 ${formatMinutes(avgSleepW)}</div>
           </div>
           <div class="text-xs font-semibold text-purple-700 dark:text-purple-300">
-            7h 충족: ${weekSleepPass}일
+            충족: ${weekSleepPass}일
           </div>
         </div>
       `;
@@ -1484,7 +1569,7 @@ function renderCalendarModeSummaryBanner(mode, stats) {
         <div class="text-xs text-blue-100 font-semibold uppercase">📚 이번 달 공부 관리 (주단위 합산 모드)</div>
         <div class="text-2xl font-black mt-1">총 ${formatMinutes(stats.monthTotalStudyMins)} 공부</div>
         <div class="text-xs text-blue-100 mt-1">
-          일 평균: <strong>${avgH}시간</strong> | 일일목표 달성: <strong>${stats.monthStudyTargetPassDays}일</strong> / ${stats.totalDays}일
+          일 평균: <strong>${avgH}시간</strong> | 일일목표(${state.studyTargetHours || 3}h) 달성: <strong>${stats.monthStudyTargetPassDays}일</strong> / ${stats.totalDays}일
         </div>
       </div>
       <div class="flex items-center gap-2 bg-white/15 px-3.5 py-2 rounded-xl backdrop-blur-xs">
@@ -1492,7 +1577,7 @@ function renderCalendarModeSummaryBanner(mode, stats) {
           <span class="text-[11px] text-blue-100 block">주간 목표 설정:</span>
           <span class="text-sm font-extrabold text-white">주 ${weeklyTargetH}시간</span>
         </div>
-        <button onclick="changeWeeklyStudyTargetPrompt()" class="px-2 py-1 rounded bg-white text-indigo-600 text-xs font-bold hover:bg-blue-50 transition">
+        <button onclick="openGoalSettingsModal()" class="px-2 py-1 rounded bg-white text-indigo-600 text-xs font-bold hover:bg-blue-50 transition">
           변경
         </button>
       </div>
@@ -1505,13 +1590,18 @@ function renderCalendarModeSummaryBanner(mode, stats) {
       `;
     }
   } else if (mode === 'workout') {
+    const woTargetM = getWorkoutTargetMinutes();
     banner.className = 'p-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-sm flex flex-wrap items-center justify-between gap-3';
     banner.innerHTML = `
       <div>
-        <div class="text-xs text-emerald-100 font-semibold uppercase">🏃 이번 달 운동 실천 달력</div>
+        <div class="text-xs text-emerald-100 font-semibold uppercase">🏃 이번 달 운동 실천 달력 (하루 ${woTargetM}분 목표)</div>
         <div class="text-2xl font-black mt-1">${stats.monthWorkoutDays}일 실천 / 총 ${stats.monthWorkoutTotalMins}분 운동</div>
         <div class="text-xs text-emerald-100 mt-1">어떤 운동을 몇 분간 했는지 달력에서 확인하세요.</div>
       </div>
+      <button onclick="openGoalSettingsModal()" class="px-3 py-1.5 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs font-bold transition flex items-center gap-1">
+        <i data-lucide="settings" class="w-3.5 h-3.5"></i>
+        <span>목표 변경</span>
+      </button>
     `;
     if (legend) {
       legend.innerHTML = `
@@ -1521,20 +1611,25 @@ function renderCalendarModeSummaryBanner(mode, stats) {
     }
   } else if (mode === 'sleep') {
     const avgSleep = stats.monthSleepRecordedDays > 0 ? Math.round(stats.monthSleepTotalMins / stats.monthSleepRecordedDays) : 0;
+    const sleepTargetText = getSleepTargetText();
     banner.className = 'p-4 rounded-xl bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-sm flex flex-wrap items-center justify-between gap-3';
     banner.innerHTML = `
       <div>
-        <div class="text-xs text-purple-100 font-semibold uppercase">🛌 이번 달 수면 패턴 (7시간 기준)</div>
+        <div class="text-xs text-purple-100 font-semibold uppercase">🛌 이번 달 수면 패턴 (${sleepTargetText} 기준)</div>
         <div class="text-2xl font-black mt-1">평균 ${formatMinutes(avgSleep)}</div>
         <div class="text-xs text-purple-100 mt-1">
-          7시간 충족: <strong>${stats.monthSleepPassDays}일</strong> | 7시간 미달: <strong>${stats.monthSleepFailDays}일</strong>
+          ${sleepTargetText} 충족: <strong>${stats.monthSleepPassDays}일</strong> | 미달: <strong>${stats.monthSleepFailDays}일</strong>
         </div>
       </div>
+      <button onclick="openGoalSettingsModal()" class="px-3 py-1.5 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs font-bold transition flex items-center gap-1">
+        <i data-lucide="settings" class="w-3.5 h-3.5"></i>
+        <span>기준 변경</span>
+      </button>
     `;
     if (legend) {
       legend.innerHTML = `
-        <div class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> 7시간 충족</div>
-        <div class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> 7시간 미달</div>
+        <div class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> ${sleepTargetText} 충족</div>
+        <div class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> ${sleepTargetText} 미달</div>
       `;
     }
   } else if (mode.startsWith('habit_') && stats.currentHabit) {
@@ -2068,10 +2163,11 @@ function renderStatsView() {
 
     const sl = rec.sleep || {};
     const slM = sl.durationMinutes || 0;
+    const targetSleepM = getSleepTargetMinutes();
     if (slM > 0) {
       totalSleepMins += slM;
       sleepRecordedDays++;
-      if (slM >= 420) {
+      if (slM >= targetSleepM) {
         sleepPassDaysCount++;
       } else {
         sleepFailDaysCount++;
@@ -2094,10 +2190,11 @@ function renderStatsView() {
   document.getElementById('stat-highlight-workout').textContent = `${workoutDaysCount}일 / ${range}일 실천`;
   document.getElementById('stat-highlight-workout-rate').textContent = `총 ${workoutTotalMins}분 실천 (${Math.round((workoutDaysCount / range) * 100)}%)`;
 
-  // 3. 수면 7시간 기준 카드
+  // 3. 수면 지표 카드 (사용자 지정 기준)
   const avgSleep = sleepRecordedDays > 0 ? Math.round(totalSleepMins / sleepRecordedDays) : 0;
+  const sleepTargetText = getSleepTargetText();
   document.getElementById('stat-highlight-sleep').textContent = `평균 ${formatMinutes(avgSleep)}`;
-  document.getElementById('stat-highlight-sleep-eval').textContent = `7h 충족: ${sleepPassDaysCount}일 | 7h 미달: ${sleepFailDaysCount}일`;
+  document.getElementById('stat-highlight-sleep-eval').textContent = `${sleepTargetText} 충족: ${sleepPassDaysCount}일 | 미달: ${sleepFailDaysCount}일`;
 
   // 4. 태만 방지 & 자기점검 지수
   const studyFailDays = range - studyTargetDaysCount;
@@ -2373,6 +2470,90 @@ function triggerCelebration(type) {
       origin: { y: 0.85 }
     });
   }
+}
+
+// ==========================================
+// 14.5. 루틴별 목표 달성 기준 설정 모달 제어
+// ==========================================
+function openGoalSettingsModal() {
+  const modal = document.getElementById('goal-settings-modal');
+  if (!modal) return;
+
+  const studyDailyInput = document.getElementById('setting-study-daily-hours');
+  const studyWeeklyInput = document.getElementById('setting-study-weekly-hours');
+  const sleepHoursInput = document.getElementById('setting-sleep-target-hours');
+  const sleepMinsInput = document.getElementById('setting-sleep-target-mins');
+  const workoutMinsInput = document.getElementById('setting-workout-target-mins');
+  const workoutDaysInput = document.getElementById('setting-workout-target-days');
+
+  if (studyDailyInput) studyDailyInput.value = state.studyTargetHours || 3;
+  if (studyWeeklyInput) studyWeeklyInput.value = state.studyWeeklyTargetHours || 21;
+  if (sleepHoursInput) sleepHoursInput.value = state.sleepTargetHours ?? 7;
+  if (sleepMinsInput) sleepMinsInput.value = state.sleepTargetMins ?? 0;
+  if (workoutMinsInput) workoutMinsInput.value = state.workoutTargetMinutes ?? 40;
+  if (workoutDaysInput) workoutDaysInput.value = state.workoutWeeklyTargetDays ?? 4;
+
+  modal.classList.add('modal-open');
+  if (window.lucide) lucide.createIcons();
+}
+
+function closeGoalSettingsModal() {
+  const modal = document.getElementById('goal-settings-modal');
+  if (modal) modal.classList.remove('modal-open');
+}
+
+function setGoalStudyPreset(dailyH, weeklyH) {
+  const dailyEl = document.getElementById('setting-study-daily-hours');
+  const weeklyEl = document.getElementById('setting-study-weekly-hours');
+  if (dailyEl) dailyEl.value = dailyH;
+  if (weeklyEl) weeklyEl.value = weeklyH;
+}
+
+function setGoalSleepPreset(h, m) {
+  const hEl = document.getElementById('setting-sleep-target-hours');
+  const mEl = document.getElementById('setting-sleep-target-mins');
+  if (hEl) hEl.value = h;
+  if (mEl) mEl.value = m;
+}
+
+function setGoalWorkoutPreset(mins, days) {
+  const minsEl = document.getElementById('setting-workout-target-mins');
+  const daysEl = document.getElementById('setting-workout-target-days');
+  if (minsEl) minsEl.value = mins;
+  if (daysEl) daysEl.value = days;
+}
+
+function handleSaveGoalSettings(e) {
+  if (e) e.preventDefault();
+
+  const studyH = parseInt(document.getElementById('setting-study-daily-hours')?.value, 10);
+  const studyWH = parseInt(document.getElementById('setting-study-weekly-hours')?.value, 10);
+  const sleepH = parseInt(document.getElementById('setting-sleep-target-hours')?.value, 10);
+  const sleepM = parseInt(document.getElementById('setting-sleep-target-mins')?.value, 10) || 0;
+  const workoutMins = parseInt(document.getElementById('setting-workout-target-mins')?.value, 10);
+  const workoutDays = parseInt(document.getElementById('setting-workout-target-days')?.value, 10);
+
+  if (!isNaN(studyH) && studyH > 0) state.studyTargetHours = studyH;
+  if (!isNaN(studyWH) && studyWH > 0) state.studyWeeklyTargetHours = studyWH;
+  if (!isNaN(sleepH) && sleepH >= 0) state.sleepTargetHours = sleepH;
+  if (!isNaN(sleepM) && sleepM >= 0) state.sleepTargetMins = sleepM;
+  if (!isNaN(workoutMins) && workoutMins > 0) state.workoutTargetMinutes = workoutMins;
+  if (!isNaN(workoutDays) && workoutDays > 0) state.workoutWeeklyTargetDays = workoutDays;
+
+  saveData();
+  closeGoalSettingsModal();
+
+  // 모든 뷰 동기화 갱신
+  if (state.activeTab === 'today') {
+    renderTodayView();
+  } else if (state.activeTab === 'plan') {
+    renderPlanView();
+  } else if (state.activeTab === 'stats') {
+    renderStatsView();
+  }
+
+  triggerCelebration('discipline');
+  alert(`🎯 루틴 목표 기준이 성공적으로 변경되었습니다!\n\n• 공부 목표: 하루 ${state.studyTargetHours}시간 (주 ${state.studyWeeklyTargetHours}시간)\n• 수면 기준: ${getSleepTargetText()} (미달/충족 판정)\n• 운동 목표: 하루 ${state.workoutTargetMinutes}분 (주 ${state.workoutWeeklyTargetDays}일)`);
 }
 
 // ==========================================

@@ -50,8 +50,12 @@
         </button>
       </nav>
 
-      <!-- 유틸리티 버튼 (데이터 관리, 다크모드) -->
-      <div class="flex items-center gap-1 shrink-0">
+      <!-- 유틸리티 버튼 (데이터 관리, 다크모드, 목표 기준 설정) -->
+      <div class="flex items-center gap-1.5 shrink-0">
+        <button onclick="openGoalSettingsModal()" class="flex items-center gap-1 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-300 font-bold text-xs transition border border-indigo-200/70 dark:border-indigo-900/50 shadow-xs" title="목표치 달성 기준 설정">
+          <i data-lucide="target" class="w-4 h-4"></i>
+          <span class="text-xs">목표 기준</span>
+        </button>
         <button onclick="toggleDarkMode()" class="p-2 rounded-xl text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition" title="다크/라이트 모드">
           <i id="theme-icon" data-lucide="moon" class="w-5 h-5"></i>
         </button>
@@ -95,10 +99,10 @@
           <div class="min-w-0 flex-1 pr-1">
             <div class="flex items-center gap-1">
               <span class="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400">공부 시간</span>
-              <span id="study-status-badge" class="text-[9px] sm:text-[10px] font-bold px-1.5 py-0.2 rounded bg-slate-100 text-slate-500 dark:bg-slate-700">미달</span>
+              <button onclick="openGoalSettingsModal()" title="목표 변경" id="study-status-badge" class="text-[9px] sm:text-[10px] font-bold px-1.5 py-0.2 rounded bg-slate-100 text-slate-500 dark:bg-slate-700 hover:opacity-80 transition">미달</button>
             </div>
             <h3 class="text-base sm:text-2xl font-bold mt-0.5 sm:mt-1 text-blue-600 dark:text-blue-400 truncate" id="summary-study-time">0시간 0분</h3>
-            <p class="text-[10px] sm:text-xs text-slate-500 mt-0.5 truncate" id="summary-study-target">목표: 3시간</p>
+            <p class="text-[10px] sm:text-xs text-slate-500 mt-0.5 truncate cursor-pointer hover:underline" onclick="openGoalSettingsModal()" id="summary-study-target">목표: 3시간 ✏️</p>
           </div>
           <div class="w-9 h-9 sm:w-12 sm:h-12 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
             <i data-lucide="book-open" class="w-4 h-4 sm:w-6 sm:h-6"></i>
@@ -108,24 +112,27 @@
         <!-- 3. 오늘 운동 여부 & 내역 -->
         <div class="bg-white dark:bg-slate-800 p-3 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm flex items-center justify-between">
           <div class="min-w-0 flex-1 pr-1">
-            <span class="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400">오늘 운동</span>
+            <div class="flex items-center gap-1">
+              <span class="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400">오늘 운동</span>
+              <button onclick="openGoalSettingsModal()" title="목표 변경" id="workout-target-badge" class="text-[9px] sm:text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 hover:opacity-80 transition">목표: 40m</button>
+            </div>
             <h3 class="text-base sm:text-2xl font-bold mt-0.5 sm:mt-1 text-emerald-600 dark:text-emerald-400 truncate" id="summary-workout-status">미실천</h3>
-            <p class="text-[10px] sm:text-xs text-slate-500 mt-0.5 truncate" id="summary-workout-detail">-</p>
+            <p class="text-[10px] sm:text-xs text-slate-500 mt-0.5 truncate cursor-pointer hover:underline" onclick="openGoalSettingsModal()" id="summary-workout-detail">-</p>
           </div>
           <div class="w-9 h-9 sm:w-12 sm:h-12 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
             <i data-lucide="dumbbell" class="w-4 h-4 sm:w-6 sm:h-6"></i>
           </div>
         </div>
 
-        <!-- 4. 수면 시간 (7시간 기준 판정) -->
+        <!-- 4. 수면 시간 (기준 판정) -->
         <div class="bg-white dark:bg-slate-800 p-3 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm flex items-center justify-between">
           <div class="min-w-0 flex-1 pr-1">
             <div class="flex items-center gap-1">
-              <span class="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400">수면(7h)</span>
-              <span id="sleep-diff-badge" class="text-[9px] sm:text-[10px] font-bold px-1 py-0.2 rounded bg-slate-100 text-slate-500 dark:bg-slate-700">대기</span>
+              <span class="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400" id="summary-sleep-label">수면</span>
+              <button onclick="openGoalSettingsModal()" title="기준 변경" id="sleep-diff-badge" class="text-[9px] sm:text-[10px] font-bold px-1 py-0.2 rounded bg-slate-100 text-slate-500 dark:bg-slate-700 hover:opacity-80 transition">대기</button>
             </div>
             <h3 class="text-base sm:text-2xl font-bold mt-0.5 sm:mt-1 text-purple-600 dark:text-purple-400 truncate" id="summary-sleep-time">0시간 0분</h3>
-            <p class="text-[10px] sm:text-xs text-slate-500 mt-0.5 truncate" id="summary-sleep-range">7h 기준 비교</p>
+            <p class="text-[10px] sm:text-xs text-slate-500 mt-0.5 truncate cursor-pointer hover:underline" onclick="openGoalSettingsModal()" id="summary-sleep-range">기준 비교 ✏️</p>
           </div>
           <div class="w-9 h-9 sm:w-12 sm:h-12 rounded-xl bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400 shrink-0">
             <i data-lucide="moon-star" class="w-4 h-4 sm:w-6 sm:h-6"></i>
@@ -256,6 +263,10 @@
                 <span class="text-slate-500 dark:text-slate-400">오늘 완료한 운동:</span>
                 <span class="font-bold text-emerald-700 dark:text-emerald-300" id="workout-summary-badge">운동 쉰 날</span>
               </div>
+              <div class="flex items-center justify-between text-xs mt-1.5 pt-1.5 border-t border-emerald-200/50 dark:border-emerald-900/50">
+                <span class="text-[11px] text-emerald-700 dark:text-emerald-300 font-medium" id="card-workout-target-text">목표: 40분 실천 (주 4일)</span>
+                <button type="button" onclick="openGoalSettingsModal()" class="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold hover:underline">목표 변경 ✏️</button>
+              </div>
             </div>
 
             <div class="space-y-3">
@@ -303,25 +314,28 @@
           </div>
         </div>
 
-        <!-- 3. 수면 시간 (취침/기상 없이 시간/분만 간단 입력 & 7시간 기준 판정) -->
+        <!-- 3. 수면 시간 (취침/기상 없이 시간/분만 간단 입력 & 사용자 설정 기준 판정) -->
         <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm flex flex-col justify-between">
           <div>
             <div class="flex items-center justify-between mb-3">
               <div class="flex items-center gap-2 font-bold text-slate-800 dark:text-white">
                 <i data-lucide="moon-star" class="w-5 h-5 text-purple-500"></i>
-                <span>수면 시간 (7시간 기준)</span>
+                <span id="sleep-card-header-title">수면 시간 (기준 7h)</span>
               </div>
-              <span id="sleep-eval-tag" class="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500">기록대기</span>
+              <div class="flex items-center gap-1.5">
+                <button type="button" onclick="openGoalSettingsModal()" class="text-[11px] font-bold text-purple-600 dark:text-purple-400 hover:underline">기준 변경 ✏️</button>
+                <span id="sleep-eval-tag" class="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500">기록대기</span>
+              </div>
             </div>
 
-            <!-- 7시간 기준 판정 배너 -->
+            <!-- 기준 판정 배너 -->
             <div class="bg-purple-50/60 dark:bg-purple-950/30 p-3.5 rounded-xl border border-purple-100 dark:border-purple-900/40 mb-3">
               <div class="flex items-baseline justify-between">
                 <span class="text-xs font-medium text-slate-600 dark:text-slate-300">오늘 잔 시간:</span>
                 <span class="text-lg font-bold text-purple-700 dark:text-purple-300" id="calc-sleep-display">0시간 0분</span>
               </div>
               <div class="mt-1.5 text-xs font-bold" id="sleep-7h-status-text">
-                7시간 기준: 수면 시간을 입력해주세요.
+                기준: 수면 시간을 입력해주세요.
               </div>
             </div>
 
@@ -987,20 +1001,161 @@
     </div>
   </div>
 
+  <!-- 목표치 달성 기준 설정 모달 -->
+  <div id="goal-settings-modal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm custom-modal items-center justify-center p-3 sm:p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-5 sm:p-6 border border-slate-200 dark:border-slate-700 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-3">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold">
+            <i data-lucide="target" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-base text-slate-900 dark:text-white leading-tight">루틴 목표 달성 기준 설정</h3>
+            <p class="text-[11px] text-slate-500">본인의 상황에 맞춰 목표치를 자유롭게 변경하세요.</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeGoalSettingsModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="goal-settings-form" onsubmit="handleSaveGoalSettings(event)" class="space-y-4 text-xs sm:text-sm">
+        
+        <!-- 1. 공부 목표 기준 -->
+        <div class="p-3.5 bg-blue-50/60 dark:bg-blue-950/30 rounded-xl border border-blue-100 dark:border-blue-900/40 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5 font-bold text-blue-900 dark:text-blue-300">
+              <i data-lucide="book-open" class="w-4 h-4 text-blue-600"></i>
+              <span>공부 시간 목표</span>
+            </div>
+            <span class="text-[11px] text-blue-600 dark:text-blue-400 font-semibold">일간 & 주간</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 pt-1">
+            <div>
+              <label class="text-[11px] font-semibold text-slate-600 dark:text-slate-400 block mb-1">하루 목표 시간</label>
+              <div class="flex items-center gap-1">
+                <input type="number" id="setting-study-daily-hours" min="1" max="24" value="3" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1.5 text-center font-bold text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <span class="text-xs text-slate-500 shrink-0">시간</span>
+              </div>
+            </div>
+            <div>
+              <label class="text-[11px] font-semibold text-slate-600 dark:text-slate-400 block mb-1">주간 목표 시간</label>
+              <div class="flex items-center gap-1">
+                <input type="number" id="setting-study-weekly-hours" min="1" max="168" value="21" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1.5 text-center font-bold text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <span class="text-xs text-slate-500 shrink-0">시간</span>
+              </div>
+            </div>
+          </div>
+          <!-- 퀵 프리셋 -->
+          <div class="flex items-center gap-1 text-[11px] text-slate-500 flex-wrap">
+            <span>추천:</span>
+            <button type="button" onclick="setGoalStudyPreset(2, 14)" class="px-2 py-0.5 rounded bg-white dark:bg-slate-800 border text-slate-700 dark:text-slate-300">하루2h(주14h)</button>
+            <button type="button" onclick="setGoalStudyPreset(3, 21)" class="px-2 py-0.5 rounded bg-white dark:bg-slate-800 border text-slate-700 dark:text-slate-300 font-bold text-blue-600">하루3h(주21h)</button>
+            <button type="button" onclick="setGoalStudyPreset(4, 28)" class="px-2 py-0.5 rounded bg-white dark:bg-slate-800 border text-slate-700 dark:text-slate-300">하루4h(주28h)</button>
+          </div>
+        </div>
+
+        <!-- 2. 수면 목표 기준 -->
+        <div class="p-3.5 bg-purple-50/60 dark:bg-purple-950/30 rounded-xl border border-purple-100 dark:border-purple-900/40 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5 font-bold text-purple-900 dark:text-purple-300">
+              <i data-lucide="moon-star" class="w-4 h-4 text-purple-600"></i>
+              <span>수면 달성 기준</span>
+            </div>
+            <span class="text-[11px] text-purple-600 dark:text-purple-400 font-semibold">미달 / 충족 판정</span>
+          </div>
+
+          <div>
+            <label class="text-[11px] font-semibold text-slate-600 dark:text-slate-400 block mb-1">하루 기준 수면 시간</label>
+            <div class="grid grid-cols-2 gap-2">
+              <div class="flex items-center gap-1">
+                <input type="number" id="setting-sleep-target-hours" min="3" max="15" value="7" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1.5 text-center font-bold text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <span class="text-xs text-slate-500 shrink-0">시간</span>
+              </div>
+              <div class="flex items-center gap-1">
+                <input type="number" id="setting-sleep-target-mins" min="0" max="59" step="10" value="0" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1.5 text-center font-bold text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <span class="text-xs text-slate-500 shrink-0">분</span>
+              </div>
+            </div>
+          </div>
+          <!-- 퀵 프리셋 -->
+          <div class="flex items-center gap-1 text-[11px] text-slate-500 flex-wrap">
+            <span>빠른선택:</span>
+            <button type="button" onclick="setGoalSleepPreset(6, 0)" class="px-2 py-0.5 rounded bg-white dark:bg-slate-800 border text-slate-700 dark:text-slate-300">6시간</button>
+            <button type="button" onclick="setGoalSleepPreset(6, 30)" class="px-2 py-0.5 rounded bg-white dark:bg-slate-800 border text-slate-700 dark:text-slate-300">6.5시간</button>
+            <button type="button" onclick="setGoalSleepPreset(7, 0)" class="px-2 py-0.5 rounded bg-white dark:bg-slate-800 border text-slate-700 dark:text-slate-300 font-bold text-purple-600">7시간(기본)</button>
+            <button type="button" onclick="setGoalSleepPreset(7, 30)" class="px-2 py-0.5 rounded bg-white dark:bg-slate-800 border text-slate-700 dark:text-slate-300">7.5시간</button>
+            <button type="button" onclick="setGoalSleepPreset(8, 0)" class="px-2 py-0.5 rounded bg-white dark:bg-slate-800 border text-slate-700 dark:text-slate-300">8시간</button>
+          </div>
+        </div>
+
+        <!-- 3. 운동 목표 기준 -->
+        <div class="p-3.5 bg-emerald-50/60 dark:bg-emerald-950/30 rounded-xl border border-emerald-100 dark:border-emerald-900/40 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5 font-bold text-emerald-900 dark:text-emerald-300">
+              <i data-lucide="dumbbell" class="w-4 h-4 text-emerald-600"></i>
+              <span>운동 실천 목표</span>
+            </div>
+            <span class="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">시간 & 빈도</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 pt-1">
+            <div>
+              <label class="text-[11px] font-semibold text-slate-600 dark:text-slate-400 block mb-1">하루 목표 시간</label>
+              <div class="flex items-center gap-1">
+                <input type="number" id="setting-workout-target-mins" min="10" max="300" step="5" value="40" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1.5 text-center font-bold text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <span class="text-xs text-slate-500 shrink-0">분</span>
+              </div>
+            </div>
+            <div>
+              <label class="text-[11px] font-semibold text-slate-600 dark:text-slate-400 block mb-1">주간 목표 일수</label>
+              <div class="flex items-center gap-1">
+                <input type="number" id="setting-workout-target-days" min="1" max="7" value="4" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1.5 text-center font-bold text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <span class="text-xs text-slate-500 shrink-0">일</span>
+              </div>
+            </div>
+          </div>
+          <!-- 퀵 프리셋 -->
+          <div class="flex items-center gap-1 text-[11px] text-slate-500 flex-wrap">
+            <span>빠른선택:</span>
+            <button type="button" onclick="setGoalWorkoutPreset(30, 3)" class="px-2 py-0.5 rounded bg-white dark:bg-slate-800 border text-slate-700 dark:text-slate-300">30분(주3일)</button>
+            <button type="button" onclick="setGoalWorkoutPreset(40, 4)" class="px-2 py-0.5 rounded bg-white dark:bg-slate-800 border text-slate-700 dark:text-slate-300 font-bold text-emerald-600">40분(주4일)</button>
+            <button type="button" onclick="setGoalWorkoutPreset(60, 5)" class="px-2 py-0.5 rounded bg-white dark:bg-slate-800 border text-slate-700 dark:text-slate-300">60분(주5일)</button>
+          </div>
+        </div>
+
+        <!-- 하단 액션 버튼 -->
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-700">
+          <button type="button" onclick="closeGoalSettingsModal()" class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-semibold transition">
+            취소
+          </button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition shadow-sm shadow-indigo-500/20">
+            기준 저장 및 적용
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- 모바일 하단 고정 네비게이션 바 (세로 모드 최적화) -->
   <nav class="fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200/90 dark:border-slate-800 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] sm:hidden">
-    <div class="max-w-md mx-auto grid grid-cols-3 h-16 px-2">
+    <div class="max-w-md mx-auto grid grid-cols-4 h-16 px-1">
       <button id="bottom-tab-today" onclick="switchTab('today')" class="bottom-nav-btn flex flex-col items-center justify-center gap-1 text-indigo-600 dark:text-indigo-400 font-bold transition">
         <i data-lucide="check-square" class="w-5 h-5"></i>
-        <span class="text-[11px]">오늘 실천</span>
+        <span class="text-[10px]">오늘 실천</span>
       </button>
       <button id="bottom-tab-plan" onclick="switchToCalendarTab()" class="bottom-nav-btn flex flex-col items-center justify-center gap-1 text-slate-400 dark:text-slate-500 font-medium hover:text-indigo-600 transition">
         <i data-lucide="calendar" class="w-5 h-5"></i>
-        <span class="text-[11px]">대형 달력</span>
+        <span class="text-[10px]">대형 달력</span>
       </button>
       <button id="bottom-tab-stats" onclick="switchTab('stats')" class="bottom-nav-btn flex flex-col items-center justify-center gap-1 text-slate-400 dark:text-slate-500 font-medium hover:text-indigo-600 transition">
         <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
-        <span class="text-[11px]">통계·리포트</span>
+        <span class="text-[10px]">통계·리포트</span>
+      </button>
+      <button onclick="openGoalSettingsModal()" class="bottom-nav-btn flex flex-col items-center justify-center gap-1 text-slate-400 dark:text-slate-500 font-medium hover:text-indigo-600 transition">
+        <i data-lucide="target" class="w-5 h-5"></i>
+        <span class="text-[10px]">목표 설정</span>
       </button>
     </div>
   </nav>
