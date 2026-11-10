@@ -329,6 +329,22 @@ function updateDateUI() {
   const picker = document.getElementById('selected-date-picker');
   if (picker) picker.value = state.currentDate;
 
+  // 등록 날짜 바에 요일(월~일) 선명하게 표시
+  const formattedTextEl = document.getElementById('selected-date-formatted-text');
+  if (formattedTextEl) {
+    const d = new Date(state.currentDate + 'T00:00:00');
+    const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+    const dayIdx = d.getDay();
+    const dayName = dayNames[dayIdx];
+
+    // 주말 강조 색상 (토: 파랑, 일: 빨강, 평일: 인디고)
+    let dayBadgeClass = 'text-indigo-600 dark:text-indigo-400 font-extrabold';
+    if (dayIdx === 0) dayBadgeClass = 'text-rose-500 font-extrabold';
+    else if (dayIdx === 6) dayBadgeClass = 'text-blue-500 font-extrabold';
+
+    formattedTextEl.innerHTML = `<span>${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()}</span> <span class="${dayBadgeClass}">(${dayName}요일)</span>`;
+  }
+
   const todayBtn = document.getElementById('btn-go-to-today');
   if (todayBtn) {
     if (state.currentDate === state.todayDate) {
@@ -344,6 +360,19 @@ function updateDateUI() {
   if (topDisplay) {
     topDisplay.textContent = formatDateDisplay(state.currentDate);
   }
+}
+
+function openDatePicker() {
+  const picker = document.getElementById('selected-date-picker');
+  if (!picker) return;
+  if (typeof picker.showPicker === 'function') {
+    try {
+      picker.showPicker();
+      return;
+    } catch (e) {}
+  }
+  picker.focus();
+  picker.click();
 }
 
 // ==========================================
